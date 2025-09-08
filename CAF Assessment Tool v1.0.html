@@ -1,0 +1,519 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCSC CAF v4 Assessment Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0F172A;
+            color: #E2E8F0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .igp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .igp-column {
+            background-color: #1F2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .stacked-bar-container {
+            display: flex;
+            height: 40px;
+            width: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-top: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stacked-bar-segment {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+        @media print {
+            body {
+                color: #000;
+                background-color: #fff;
+            }
+            .dashboard-container {
+                padding: 1rem;
+                border: 1px solid #ccc;
+                border-radius: 0.5rem;
+            }
+            h1, h2, h3, h4, p {
+                color: #000;
+            }
+            .bg-slate-700, .bg-slate-800 {
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .rounded-lg {
+                border-radius: 0.5rem;
+            }
+            .shadow-inner {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300">
+    <div class="p-6 min-h-screen">
+        <header class="bg-slate-800 p-4 rounded-lg shadow-xl mb-6 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="text-3xl font-bold text-sky-400">CAF v4 Assessment</h1>
+            <div class="flex space-x-4">
+                <input type="file" id="csvFile" accept=".csv" class="hidden">
+                <label for="csvFile" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load IGPs</label>
+                <input type="file" id="loadStateFile" accept=".json" class="hidden">
+                <label for="loadStateFile" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load Assessment</label>
+                <button id="downloadJsonBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Download Assessment</button>
+                <button id="printBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Print Dashboard</button>
+            </div>
+        </header>
+
+        <nav class="bg-slate-800 p-2 rounded-lg shadow-md mb-6 flex flex-wrap gap-2 justify-center sticky top-[96px] z-40">
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 bg-sky-600 hover:bg-sky-700 text-white text-center" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveA">Objective A</button>
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveB">Objective B</button>
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveC">Objective C</button>
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveD">Objective D</button>
+        </nav>
+
+        <main class="bg-slate-800 p-6 rounded-lg shadow-xl">
+            <div id="dashboard" class="tab-content active">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Assessment Dashboard</h2>
+                <div id="dashboardContent" class="space-y-6">
+                    <!-- Dashboard content will be dynamically generated here -->
+                </div>
+            </div>
+
+            <div id="objectiveA" class="tab-content">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective A: Managing Security Risk</h2>
+                <div id="contentA" class="space-y-8"></div>
+            </div>
+
+            <div id="objectiveB" class="tab-content">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective B: Protecting Against Cyber Attack</h2>
+                <div id="contentB" class="space-y-8"></div>
+            </div>
+
+            <div id="objectiveC" class="tab-content">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective C: Detecting Cyber Security Events</h2>
+                <div id="contentC" class="space-y-8"></div>
+            </div>
+
+            <div id="objectiveD" class="tab-content">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective D: Minimising the Impact of Incidents</h2>
+                <div id="contentD" class="space-y-8"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const csvFile = document.getElementById('csvFile');
+            const loadStateFile = document.getElementById('loadStateFile');
+            const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+            const printBtn = document.getElementById('printBtn');
+            const contentContainers = {
+                'A': document.getElementById('contentA'),
+                'B': document.getElementById('contentB'),
+                'C': document.getElementById('contentC'),
+                'D': document.getElementById('contentD')
+            };
+            const dashboardContent = document.getElementById('dashboardContent');
+
+            let allIGPs = {};
+            let attainment = {};
+
+            const parseCSV = (csv) => {
+                const lines = csv.split('\n').filter(line => line.trim() !== '');
+                if (lines.length === 0) return [];
+                const headers = lines[0].split(',').map(h => h.trim());
+                const result = [];
+
+                // Regex to split CSV by commas, but not inside double quotes.
+                const splitRegex = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i];
+                    if (row.trim() === '') continue;
+
+                    const values = row.split(splitRegex).map(v => v.trim());
+
+                    // Clean up the quotes and double-quotes within fields
+                    const cleanedValues = values.map(v => {
+                        // Remove leading/trailing quotes and replace double quotes with a single quote
+                        if (v.startsWith('"') && v.endsWith('"')) {
+                            return v.substring(1, v.length - 1).replace(/""/g, '"');
+                        }
+                        return v;
+                    });
+                    
+                    // Only process rows that have the same number of fields as headers
+                    if (cleanedValues.length === headers.length) {
+                        const obj = headers.reduce((acc, header, index) => {
+                            acc[header] = cleanedValues[index];
+                            return acc;
+                        }, {});
+                        result.push(obj);
+                    }
+                }
+                return result;
+            };
+
+            const groupIGPs = (data) => {
+                const grouped = {};
+                data.forEach(item => {
+                    const obj = item.Objective;
+                    const principle = item.Principle;
+                    const area = item.AreaID;
+                    if (!grouped[obj]) grouped[obj] = {};
+                    if (!grouped[obj][principle]) {
+                        grouped[obj][principle] = { title: item.PrincipleTitle, areas: {} };
+                    }
+                    if (!grouped[obj][principle].areas[area]) {
+                        grouped[obj][principle].areas[area] = { title: item.AreaTitle, igps: [] };
+                    }
+                    grouped[obj][principle].areas[area].igps.push(item);
+                });
+                return grouped;
+            };
+
+            const renderAssessment = (objective, data) => {
+                const container = contentContainers[objective];
+                container.innerHTML = '';
+                const principles = Object.keys(data).sort();
+                
+                const statusOrder = { 'Not Achieved': 1, 'Partially Achieved': 2, 'Achieved': 3 };
+
+                principles.forEach(principleId => {
+                    const principle = data[principleId];
+                    const principleDiv = document.createElement('div');
+                    principleDiv.className = "mb-10";
+                    principleDiv.innerHTML = `<h3 class="text-2xl font-bold text-sky-400 mb-4">${principleId} - ${principle.title}</h3>`;
+                    container.appendChild(principleDiv);
+
+                    const areas = Object.keys(principle.areas).sort();
+                    areas.forEach(areaId => {
+                        const area = principle.areas[areaId];
+                        
+                        // Sanitize areaId to ensure it's a valid ID
+                        const sanitizedAreaId = areaId ? areaId.replace(/[^a-zA-Z0-9-_]/g, '_') : `area_${Math.random().toString(36).substring(2, 9)}`;
+                        const noteId = `note-${sanitizedAreaId}`;
+                        const dropdownId = `dropdown-${sanitizedAreaId}`;
+                        
+                        // Ensure the attainment object has an entry for this area before rendering
+                        if (!attainment[areaId]) {
+                            attainment[areaId] = { status: 'Not Assessed', note: '' };
+                        }
+
+                        const areaDiv = document.createElement('div');
+                        areaDiv.className = "bg-slate-700 p-6 rounded-lg shadow-inner mb-6";
+                        areaDiv.innerHTML = `
+                            <h4 class="text-xl font-semibold text-slate-100 mb-2">${areaId} - ${area.title}</h4>
+                            <div class="mb-4">
+                                <label for="${dropdownId}" class="block text-sm font-medium text-slate-400 mb-2">Attainment Level:</label>
+                                <select id="${dropdownId}" class="w-full p-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <option value="Not Assessed">Not Assessed</option>
+                                    <option value="Not Achieved">Not Achieved</option>
+                                    <option value="Partially Achieved">Partially Achieved</option>
+                                    <option value="Achieved">Achieved</option>
+                                    <option value="Not Applicable">Not Applicable</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label for="${noteId}" class="block text-sm font-medium text-slate-400 mb-2">Notes:</label>
+                                <textarea id="${noteId}" rows="4" class="w-full p-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                            </div>
+                            <div class="igp-grid">
+                                <div class="igp-column">
+                                    <h5 class="text-sm font-bold text-red-400 mb-2">Not Achieved</h5>
+                                    <ul class="list-disc list-inside space-y-2 text-sm">
+                                        ${area.igps.filter(igp => igp.Status === 'Not Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="igp-column">
+                                    <h5 class="text-sm font-bold text-yellow-400 mb-2">Partially Achieved</h5>
+                                    <ul class="list-disc list-inside space-y-2 text-sm">
+                                        ${area.igps.filter(igp => igp.Status === 'Partially Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="igp-column">
+                                    <h5 class="text-sm font-bold text-green-400 mb-2">Achieved</h5>
+                                    <ul class="list-disc list-inside space-y-2 text-sm">
+                                        ${area.igps.filter(igp => igp.Status === 'Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+                        principleDiv.appendChild(areaDiv);
+
+                        const dropdown = areaDiv.querySelector(`#${dropdownId}`);
+                        const note = areaDiv.querySelector(`#${noteId}`);
+                        
+                        if (dropdown && note) {
+                            const savedStatus = attainment[areaId]?.status || 'Not Assessed';
+                            dropdown.value = savedStatus;
+                            note.value = attainment[areaId]?.note || '';
+        
+                            dropdown.addEventListener('change', (e) => {
+                                attainment[areaId].status = e.target.value;
+                                updateDashboard();
+                            });
+        
+                            note.addEventListener('input', (e) => {
+                                attainment[areaId].note = e.target.value;
+                            });
+                        } else {
+                            console.error(`Could not find dropdown or note for areaId: ${areaId}. HTML might be malformed or AreaID is invalid.`);
+                        }
+                    });
+                });
+            };
+
+            const updateDashboard = () => {
+                dashboardContent.innerHTML = '';
+                let totalAreas = 0;
+                Object.values(allIGPs).forEach(obj => {
+                    Object.values(obj).forEach(principle => {
+                        totalAreas += Object.keys(principle.areas).length;
+                    });
+                });
+
+                const assessedAreas = Object.values(attainment).filter(a => a.status !== 'Not Assessed' && a.status !== 'Not Applicable').length;
+                const assessedPercentage = totalAreas > 0 ? ((assessedAreas / totalAreas) * 100).toFixed(1) : 0;
+
+                const dashboardHTML = `
+                    <div class="p-6 bg-slate-700 rounded-lg shadow-inner flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">Overall Assessment Progress</h3>
+                        <div class="text-2xl font-bold">${assessedPercentage}% Assessed</div>
+                    </div>
+                `;
+                dashboardContent.innerHTML = dashboardHTML;
+
+                const objectiveData = {};
+                Object.keys(contentContainers).forEach(obj => {
+                    objectiveData[obj] = {
+                        'Achieved': 0,
+                        'Partially Achieved': 0,
+                        'Not Achieved': 0,
+                        'Not Assessed': 0,
+                        'Not Applicable': 0
+                    };
+                });
+                
+                Object.keys(attainment).forEach(areaId => {
+                    const obj = areaId[0];
+                    const status = attainment[areaId].status;
+                    if (objectiveData[obj]) {
+                        objectiveData[obj][status]++;
+                    }
+                });
+
+                Object.keys(objectiveData).forEach(obj => {
+                    const totalIGPsForObjective = allIGPs[obj] ? Object.values(allIGPs[obj]).reduce((sum, principle) => sum + Object.keys(principle.areas).length, 0) : 0;
+                    
+                    const notAchievedCount = objectiveData[obj]['Not Achieved'];
+                    const partiallyAchievedCount = objectiveData[obj]['Partially Achieved'];
+                    const achievedCount = objectiveData[obj]['Achieved'];
+                    const notAssessedCount = objectiveData[obj]['Not Assessed'];
+                    const notApplicableCount = objectiveData[obj]['Not Applicable'];
+                    
+                    const totalForBar = notAchievedCount + partiallyAchievedCount + achievedCount + notAssessedCount;
+
+                    const notAchievedPercentage = totalForBar > 0 ? ((notAchievedCount / totalForBar) * 100).toFixed(1) : 0;
+                    const partiallyAchievedPercentage = totalForBar > 0 ? ((partiallyAchievedCount / totalForBar) * 100).toFixed(1) : 0;
+                    const achievedPercentage = totalForBar > 0 ? ((achievedCount / totalForBar) * 100).toFixed(1) : 0;
+                    const notAssessedPercentage = totalForBar > 0 ? ((notAssessedCount / totalForBar) * 100).toFixed(1) : 0;
+                    
+                    const objDiv = document.createElement('div');
+                    objDiv.className = "p-6 bg-slate-700 rounded-lg shadow-inner";
+                    objDiv.innerHTML = `
+                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Objective ${obj} Progress</h3>
+                        
+                        <div class="stacked-bar-container">
+                            <div class="stacked-bar-segment bg-red-500" style="width: ${notAchievedPercentage}%"></div>
+                            <div class="stacked-bar-segment bg-yellow-500" style="width: ${partiallyAchievedPercentage}%"></div>
+                            <div class="stacked-bar-segment bg-green-500" style="width: ${achievedPercentage}%"></div>
+                            <div class="stacked-bar-segment bg-gray-500" style="width: ${notAssessedPercentage}%"></div>
+                        </div>
+
+                        <div class="space-y-2 text-sm mt-4">
+                            <p><strong>Total Subsections:</strong> ${totalIGPsForObjective}</p>
+                            <p><strong>Assessed:</strong> ${((assessedAreas / totalAreas) * 100).toFixed(1)}%</p>
+                            <div class="grid grid-cols-2 gap-2 mt-4">
+                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Achieved: ${objectiveData[obj]['Achieved']}</span>
+                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Partially Achieved: ${objectiveData[obj]['Partially Achieved']}</span>
+                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>Not Achieved: ${objectiveData[obj]['Not Achieved']}</span>
+                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>Not Assessed: ${objectiveData[obj]['Not Assessed']}</span>
+                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-slate-500 mr-2"></span>Not Applicable: ${objectiveData[obj]['Not Applicable']}</span>
+                            </div>
+                        </div>
+                    `;
+                    dashboardContent.appendChild(objDiv);
+                });
+            };
+            
+            csvFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const csvData = e.target.result;
+                    const data = parseCSV(csvData);
+                    allIGPs = groupIGPs(data);
+
+                    // Initialize the attainment object with 'Not Assessed' for all areas
+                    attainment = {};
+                    Object.values(allIGPs).forEach(obj => {
+                        Object.values(obj).forEach(principle => {
+                            Object.keys(principle.areas).forEach(areaId => {
+                                attainment[areaId] = { status: 'Not Assessed', note: '' };
+                            });
+                        });
+                    });
+                    
+                    Object.keys(contentContainers).forEach(obj => {
+                        if (allIGPs[obj]) {
+                            renderAssessment(obj, allIGPs[obj]);
+                        } else {
+                            contentContainers[obj].innerHTML = `<p class="text-center text-slate-400">No data found for Objective ${obj}.</p>`;
+                        }
+                    });
+                    
+                    // Initial rendering of the dashboard
+                    updateDashboard();
+                };
+                reader.readAsText(file);
+            });
+
+            loadStateFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const loadedData = JSON.parse(e.target.result);
+                        if (loadedData && loadedData.attainment && loadedData.allIGPs) {
+                            attainment = loadedData.attainment;
+                            allIGPs = loadedData.allIGPs;
+
+                            Object.keys(contentContainers).forEach(obj => {
+                                if (allIGPs[obj]) {
+                                    renderAssessment(obj, allIGPs[obj]);
+                                }
+                            });
+                            updateDashboard();
+                        } else {
+                            console.error('Failed to load assessment. The file is missing "attainment" or "allIGPs" data.');
+                        }
+                    } catch (error) {
+                        console.error('Failed to load file. It might be corrupted or not a valid JSON file.', error);
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            downloadJsonBtn.addEventListener('click', () => {
+                const assessmentState = {
+                    attainment: attainment,
+                    allIGPs: allIGPs
+                };
+                const dataStr = JSON.stringify(assessmentState, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const date = new Date().toISOString().slice(0, 10);
+                a.download = `CAF v4 Assessment ${date}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('bg-sky-600', 'text-white'));
+                    tabs.forEach(t => t.classList.add('hover:bg-slate-700'));
+                    tab.classList.remove('hover:bg-slate-700');
+                    tab.classList.add('bg-sky-600', 'text-white');
+
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            printBtn.addEventListener('click', () => {
+                const dashboardToPrint = document.getElementById('dashboard').cloneNode(true);
+                const printWindow = window.open('', '_blank');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <title>CAF v4 Dashboard Report</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                        <style>
+                            body { font-family: 'Inter', sans-serif; background-color: #fff; color: #000; padding: 2rem; }
+                            h1, h2, h3, h4, p, strong { color: #000; }
+                            .space-y-6 > div { margin-bottom: 1.5rem; }
+                            .p-6 { padding: 1.5rem; }
+                            .bg-slate-700 { background-color: #f0f0f0; }
+                            .rounded-lg { border-radius: 0.5rem; }
+                            .shadow-inner { box-shadow: none; }
+                            .flex { display: flex; }
+                            .justify-between { justify-content: space-between; }
+                            .items-center { align-items: center; }
+                            .text-xl { font-size: 1.25rem; }
+                            .font-semibold { font-weight: 600; }
+                            .text-2xl { font-size: 1.5rem; }
+                            .font-bold { font-weight: 700; }
+                            .grid-cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                            .gap-2 { gap: 0.5rem; }
+                            .mt-4 { margin-top: 1rem; }
+                            .w-3 { width: 0.75rem; }
+                            .h-3 { height: 0.75rem; }
+                            .rounded-full { border-radius: 9999px; }
+                            .mr-2 { margin-right: 0.5rem; }
+                            .bg-green-500 { background-color: #22c55e; }
+                            .bg-yellow-500 { background-color: #eab308; }
+                            .bg-red-500 { background-color: #ef4444; }
+                            .bg-gray-500 { background-color: #6b7280; }
+                            .bg-slate-500 { background-color: #64748b; }
+                            .stacked-bar-container { display: flex; height: 40px; width: 100%; border-radius: 0.5rem; overflow: hidden; margin-top: 1rem; }
+                            .stacked-bar-segment { height: 100%; transition: width 0.5s ease-in-out; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1 class="text-3xl font-bold mb-6 text-center">CAF v4 Assessment Report</h1>
+                        ${dashboardToPrint.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+            });
+        });
+    </script>
+</body>
+</html>
