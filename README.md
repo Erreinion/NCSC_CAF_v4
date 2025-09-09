@@ -3,7 +3,9 @@ Resources for understanding and processing NCSC CAF v4 Objectives and Indicators
 
 All source material under Crown copyright. Text content is licenced for re-use under the Open Government Licence v3.0. 
 
-Read more: https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf
+Read more about the CAF: https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf
+
+Try out the Assessment Tool: https://erreinion.github.io/NCSC_CAF_v4/AssessmentTool.html
 
 ## Why am I making this available?
 Cybersecurity information and best practice should be available to all. If you have the 
