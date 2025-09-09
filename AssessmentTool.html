@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -88,6 +88,7 @@
             <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveB">Objective B</button>
             <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveC">Objective C</button>
             <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveD">Objective D</button>
+            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="instructions">Instructions</button>
         </nav>
 
         <main class="bg-slate-800 p-6 rounded-lg shadow-xl">
@@ -116,6 +117,55 @@
             <div id="objectiveD" class="tab-content">
                 <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective D: Minimising the Impact of Incidents</h2>
                 <div id="contentD" class="space-y-8"></div>
+            </div>
+
+            <div id="instructions" class="tab-content">
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Instructions</h2>
+                <div class="space-y-6 text-slate-300">
+                    <p>This tool allows you to perform an assessment against the <a href="https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf" class="text-sky-400 hover:text-sky-300 underline" target="_blank">NCSC's Cyber Assessment Framework (CAF) v4</a> using a flat CSV file of the Indicative Good Practice (IGP) statements.</p>
+                    
+                    <div>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 1: Load the IGPs</h3>
+                        <p>Click the <strong>"Load IGPs"</strong> button and select a compatible CSV file. The file should have the following column headers in any order:</p>
+                        <ul class="list-disc list-inside ml-4 mt-2">
+                            <li><code>Objective</code></li>
+                            <li><code>Principle</code></li>
+                            <li><code>PrincipleTitle</code></li>
+                            <li><code>AreaID</code></li>
+                            <li><code>AreaTitle</code></li>
+                            <li><code>Status</code></li>
+                            <li><code>IGP</code></li>
+                        </ul>
+                        <p class="mt-4 text-sm text-slate-400">
+                            A sample IGP CSV file can be downloaded from: 
+                            <a href="https://github.com/Erreinion/NCSC_CAF_v4" class="text-sky-400 hover:text-sky-300 underline" target="_blank">https://github.com/Erreinion/NCSC_CAF_v4</a>
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 2: Perform the Assessment</h3>
+                        <p>Once the file is loaded, navigate through the tabs for Objectives A, B, C, and D. For each section, you can set the attainment level and add notes for each Area:</p>
+                        <ul class="list-disc list-inside ml-4 mt-2">
+                            <li>Use the <strong>"Attainment Level"</strong> dropdown to select a status: "Achieved", "Partially Achieved", "Not Achieved", or "Not Applicable".</li>
+                            <li>Use the <strong>"Notes"</strong> text area to add detailed comments or evidence for your assessment.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 3: Review the Dashboard</h3>
+                        <p>Click the <strong>"Dashboard"</strong> tab at any time to see a summary of your progress. The dashboard provides a visual breakdown of your assessment by Objective and overall.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 4: Save and Load</h3>
+                        <p>To save your progress, click the <strong>"Download Assessment"</strong> button. This will download a JSON file with your current assessment status. To resume your work later, click the <strong>"Load Assessment"</strong> button and select this JSON file.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 5: Print a Report</h3>
+                        <p>Click the <strong>"Print Dashboard"</strong> button to generate a printable report of your assessment summary.</p>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
