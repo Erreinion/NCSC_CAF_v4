@@ -67,6 +67,30 @@
             border-radius: 0.25rem;
             cursor: pointer;
         }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(226, 232, 240, 0.2);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         @media print {
             body {
                 color: #000;
@@ -94,6 +118,10 @@
     </style>
 </head>
 <body class="bg-slate-900 text-slate-300">
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
     <div class="p-6 min-h-screen">
         <header class="bg-slate-800 p-4 rounded-lg shadow-xl mb-6 flex justify-between items-center sticky top-0 z-50">
             <h1 class="text-3xl font-bold text-sky-400">CAF v4 Assessment</h1>
@@ -152,14 +180,14 @@
                             Authored by Jordan M. Schroeder, Arxa Cyber. For any bugs or feature requests, send a note to <a href="mailto:tools@ArxaCyber.com" class="text-sky-400 hover:text-sky-300 underline">tools@ArxaCyber.com</a>.
                         </p>
                     </div>
-                    <p class="text-sm text-slate-400" id="autoLoadInfo">
-                        This tool automatically loads the latest Indicative Good Practice (IGP) statements from the lastest IGP csv file from <a href="https://github.com/Erreinion/NCSC_CAF_v4" class="text-sky-400 hover:text-sky-300 underline" target="_blank">github.com/Erreinion/NCSC_CAF_v4</a>.
+                    <p class="text-sm text-slate-400" id="loadedFilename">
+                        Loading...
                     </p>
                     <p>This tool allows you to perform an assessment against the <a href="https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf" class="text-sky-400 hover:text-sky-300 underline" target="_blank">NCSC's Cyber Assessment Framework (CAF) v4</a> using a flat CSV file of the Indicative Good Practice (IGP) statements.</p>
                     
                     <div>
                         <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 1: Get the Indicative Good Practice (IGP) Statements</h3>
-                        <p>The IGP statements are automatically loaded by selecting the highest available version with the most recent datestamp from a known list of files. You can also use the <strong>"Load IGP"</strong> button to load a CSV file from your computer. Loading a new IGP file will reset the current assessment.</p>
+                        <p>The IGP statements are automatically loaded by selecting the most recent IGP file from: <a href="https://github.com/Erreinion/NCSC_CAF_v4/" class="text-sky-400 hover:text-sky-300 underline" target="_blank">https://github.com/Erreinion/NCSC_CAF_v4/</a>. You can also use the <strong>"Load IGP"</strong> button to load a CSV file from your computer. Loading a new IGP file will reset the current assessment.</p>
                     </div>
 
                     <div>
@@ -196,150 +224,9 @@
     </div>
 
     <script>
-        const defaultIgpData = `Objective,Principle,PrincipleTitle,AreaID,AreaTitle,Status,IGP
-A,A1,Governance,A1.a,Board Direction,Not Achieved,The security of network and information systems related to the operation of essential function(s) is not discussed or reported on regularly at board-level.
-A,A1,Governance,A1.a,Board Direction,Not Achieved,"Board-level discussions on the security of network and information systems are based on partial or out-of-date information, without the benefit of expert guidance."
-A,A1,Governance,A1.a,Board Direction,Not Achieved,The security of network and information systems supporting your essential function(s) are not driven effectively by the direction set at board-level.
-A,A1,Governance,A1.a,Board Direction,Not Achieved,Senior management or other pockets of the organisation consider themselves exempt from some policies or expect special accommodations to be made.
-A,A1,Governance,A1.a,Board Direction,Achieved,"Your organisation's approach and policy relating to the security of network and information systems supporting the operation of your essential function(s) are owned and managed at board-level. These are communicated, in a meaningful way, to risk management decision-makers across the organisation."
-A,A1,Governance,A1.a,Board Direction,Achieved,"Regular board-level discussions on the security of network and information systems supporting the operation of your essential function(s) take place, based on timely and accurate information and informed by expert guidance and understanding of current threats, risks and vulnerabilities."
-A,A1,Governance,A1.a,Board Direction,Achieved,The board's strategic direction takes due account of the security requirements of your essential function(s).
-A,A1,Governance,A1.b,Board Accountability,Not Achieved,The board does not take accountability for the security of your essential function(s).
-A,A1,Governance,A1.b,Board Accountability,Not Achieved,"The board lacks confidence in its ability to manage the security of your essential function(s), or views this as an operational or technical issue."
-A,A1,Governance,A1.b,Board Accountability,Not Achieved,"There is no clearly accountable person or function at board-level for the security of your essential function(s), and the board doesn’t take a direct interest."
-A,A1,Governance,A1.b,Board Accountability,Not Achieved,"There is no formal board-level reporting or oversight of the security of your essential function(s)."
-A,A1,Governance,A1.b,Board Accountability,Achieved,"The board is accountable for the security of your essential function(s) and has a clear understanding of its responsibilities and level of risk exposure."
-A,A1,Governance,A1.b,Board Accountability,Achieved,"The board is comfortable that it has sufficient information and expert advice at its disposal to discharge its responsibilities in relation to the security of your essential function(s)."
-A,A1,Governance,A1.b,Board Accountability,Achieved,Accountability for the security of essential function(s) is clearly defined at board-level.
-A,A1,Governance,A1.b,Board Accountability,Achieved,The board receives timely and accurate reports on the security of your essential function(s) and provides effective challenge on information presented.
-A,A1,Governance,A1.c,Communication with External Parties,Not Achieved,"There is no formal process or policy for communicating on the security of your essential function(s) with your wider stakeholders or regulators."
-A,A1,Governance,A1.c,Communication with External Parties,Not Achieved,Your board-level engagement with regulators and stakeholders is informal and ad hoc.
-A,A1,Governance,A1.c,Communication with External Parties,Achieved,"Your organisation has a documented process for communicating with external parties on the security of your essential function(s)."
-A,A1,Governance,A1.c,Communication with External Parties,Achieved,You are engaging regularly with your regulator and other stakeholders in an open and transparent manner.
-A,A2,Risk Management,A2.a,Risk Management Processes,Not Achieved,Your organisation's risk management processes do not take into account the security of your essential function(s).
-A,A2,Risk Management,A2.a,Risk Management Processes,Not Achieved,Risk management processes relating to the security of your essential function(s) are not integrated into your organisation's wider risk management practices.
-A,A2,Risk Management,A2.a,Risk Management Processes,Not Achieved,"Key security risks relating to your essential function(s) are not actively managed or are not visible to the board."
-A,A2,Risk Management,A2.a,Risk Management Processes,Achieved,"The risk management processes that apply to the security of your essential function(s) are documented and applied consistently."
-A,A2,Risk Management,A2.a,Risk Management Processes,Achieved,These processes are integrated into your wider organisation's risk management practices.
-A,A2,Risk Management,A2.a,Risk Management Processes,Achieved,"Key security risks relating to your essential function(s) are actively managed, monitored and visible to the board."
-A,A2,Risk Management,A2.b,Risk Assessment,Not Achieved,"You do not carry out a documented assessment of the security risks that may affect your essential function(s) or do so in an ad-hoc manner."
-A,A2,Risk Management,A2.b,Risk Assessment,Not Achieved,Your risk assessment focuses on compliance rather than the potential impact to your essential function(s).
-A,A2,Risk Management,A2.b,Risk Assessment,Not Achieved,"The risk assessment is a 'one off' exercise and not subject to regular reviews to take account of new threats, technologies or business processes."
-A,A2,Risk Management,A2.b,Risk Assessment,Achieved,"There is a documented process for assessing the security risks that may affect your essential function(s), based on an understanding of your threat landscape and vulnerabilities, and which is subject to regular reviews."
-A,A2,Risk Management,A2.b,Risk Assessment,Achieved,"Risk assessments are performed against specific assets to identify vulnerabilities, to quantify the risk and to identify mitigations."
-A,A2,Risk Management,A2.c,Acceptable Risk,Not Achieved,"Your organisation does not have a formal definition of what constitutes an acceptable level of security risk to your essential function(s)."
-A,A2,Risk Management,A2.c,Acceptable Risk,Not Achieved,"Security risks relating to your essential function(s) are not escalated to the board for their approval."
-A,A2,Risk Management,A2.c,Acceptable Risk,Achieved,"Your organisation has a formal definition of what constitutes an acceptable level of security risk to your essential function(s), which is understood and approved by the board."
-A,A2,Risk Management,A2.c,Acceptable Risk,Achieved,"You have a formal sign-off process in place for risks that exceed the board's appetite."
-A,A3,Asset Management,A3.a,Asset Inventory,Not Achieved,"Your organisation's asset management process does not formally take into account the security of network and information systems supporting your essential function(s)."
-A,A3,Asset Management,A3.a,Asset Inventory,Not Achieved,"You don’t have a comprehensive asset inventory of your essential function(s) or it is incomplete, inaccurate, or out of date."
-A,A3,Asset Management,A3.a,Asset Inventory,Achieved,"There is a formal and managed asset inventory of the network and information systems supporting your essential function(s) which is up to date and accurate."
-A,A3,Asset Management,A3.a,Asset Inventory,Achieved,"Your organisation’s asset inventory is aligned with your essential function(s) and includes the people, processes and technology that are required to deliver it."
-A,A3,Asset Management,A3.a,Asset Inventory,Achieved,"You are able to identify and manage your critical assets and the interdependencies between them."
-A,A3,Asset Management,A3.b,Asset Disposal,Not Achieved,"You do not have a formal process for the disposal of assets, or the process is not always followed."
-A,A3,Asset Management,A3.b,Asset Disposal,Not Achieved,"Your disposal process does not take into account the type of data held on an asset, or your organisation's risk appetite."
-A,A3,Asset Management,A3.b,Asset Disposal,Achieved,"Your organisation has a formal and managed process for the disposal of assets which is consistently followed and takes into account the type of data and information held on an asset."
-A,A3,Asset Management,A3.b,Asset Disposal,Achieved,The disposal process is approved by senior management and regularly reviewed.
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Not Achieved,"There is no single person or function responsible for managing the security risks in your supply chain."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Not Achieved,"You do not carry out a documented assessment of the security risks in your supply chain, or do so in an ad-hoc manner."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Not Achieved,"There is no formal definition of what constitutes an acceptable level of security risk in your supply chain."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Not Achieved,"Security risks relating to your supply chain are not escalated to the board for their approval."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Achieved,"There is a person or function responsible for managing the security risks in your supply chain and this is documented."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Achieved,"There is a formal and documented process for assessing the security risks in your supply chain, based on an understanding of your threat landscape and vulnerabilities."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Achieved,"Your organisation has a formal definition of what constitutes an acceptable level of security risk in your supply chain."
-A,A4,Supply Chain,A4.a,Supply Chain Governance,Achieved,"Security risks relating to your supply chain are escalated to the board for their approval."
-A,A4,Supply Chain,A4.b,Contractual Arrangements,Not Achieved,"Your organisation's contractual arrangements do not include a requirement for suppliers to adopt cyber security measures relevant to your essential function(s)."
-A,A4,Supply Chain,A4.b,Contractual Arrangements,Not Achieved,"You do not carry out regular audits of the security of your suppliers to ensure that they are meeting their contractual obligations."
-A,A4,Supply Chain,A4.b,Contractual Arrangements,Achieved,"The contractual arrangements with your suppliers include a requirement to adopt cyber security measures relevant to your essential function(s)."
-A,A4,Supply Chain,A4.b,Contractual Arrangements,Achieved,"You regularly audit the security of your suppliers to ensure that they are meeting their contractual obligations, and that these measures remain effective."
-A,A4,Supply Chain,A4.b,Contractual Arrangements,Achieved,"You ensure that your contractual arrangements with third parties provide for the notification of security incidents."
-A,A4,Supply Chain,A4.c,Supply Chain Information,Not Achieved,"Your organisation does not have a single source of truth for information on the security of your supply chain, or it is incomplete, inaccurate, or out of date."
-A,A4,Supply Chain,A4.c,Supply Chain Information,Not Achieved,"You do not share information on the security of your supply chain with your wider stakeholders."
-A,A4,Supply Chain,A4.c,Supply Chain Information,Achieved,"Your organisation has a single source of truth for information on the security of your supply chain, which is up to date and accurate."
-A,A4,Supply Chain,A4.c,Supply Chain Information,Achieved,"You share information on the security of your supply chain with your wider stakeholders, including regulators and law enforcement."
-B,B1,Service Protection Policies, Processes and Procedures,B1.a,Policies and Procedures,Not Achieved,"Your organisation does not have formal policies and procedures for the security of your essential function(s) or they are not consistently applied."
-B,B1,Service Protection Policies, Processes and Procedures,B1.a,Policies and Procedures,Not Achieved,"Your security policies and procedures are not consistently applied across your organisation, or you do not have a process to ensure compliance."
-B,B1,Service Protection Policies, Processes and Procedures,B1.a,Policies and Procedures,Achieved,"Your organisation has formal, documented policies and procedures for the security of your essential function(s), which are consistently applied."
-B,B1,Service Protection Policies, Processes and Procedures,B1.a,Policies and Procedures,Achieved,You have a process to ensure compliance with your security policies and procedures.
-B,B1,Service Protection Policies, Processes and Procedures,B1.a,Policies and Procedures,Achieved,"Your organisation's policies and procedures are reviewed and updated regularly to take account of new threats, technologies and business processes."
-B,B1,Service Protection Policies, Processes and Procedures,B1.b,Security Architecture,Not Achieved,"You do not have a documented security architecture, or it is not subject to regular reviews."
-B,B1,Service Protection Policies, Processes and Procedures,B1.b,Security Architecture,Not Achieved,"Your security architecture is not aligned with your organisation's business strategy, or does not take into account the security requirements of your essential function(s)."
-B,B1,Service Protection Policies, Processes and Procedures,B1.b,Security Architecture,Achieved,"Your organisation has a documented security architecture, which is subject to regular reviews."
-B,B1,Service Protection Policies, Processes and Procedures,B1.b,Security Architecture,Achieved,"Your security architecture is aligned with your organisation's business strategy and takes into account the security requirements of your essential function(s)."
-B,B1,Service Protection Policies, Processes and Procedures,B1.b,Security Architecture,Achieved,"You have a process for assessing the security of new technologies and business processes, and for incorporating them into your security architecture."
-B,B2,Identity and Access Control,B2.a,Identity and Authentication,Not Achieved,"You do not have a formal process for managing user identities, or the process is not consistently applied."
-B,B2,Identity and Access Control,B2.a,Identity and Authentication,Not Achieved,"Your organisation's authentication process does not take into account the type of user or the data they are accessing."
-B,B2,Identity and Access Control,B2.a,Identity and Authentication,Achieved,"Your organisation has a formal and managed process for user identity and authentication, which is consistently applied."
-B,B2,Identity and Access Control,B2.a,Identity and Authentication,Achieved,"Your authentication process takes into account the type of user and the data they are accessing, and you use multi-factor authentication where appropriate."
-B,B2,Identity and Access Control,B2.a,Identity and Authentication,Achieved,"You have a process for the deprovisioning of user accounts when a user leaves the organisation or no longer requires access."
-B,B2,Identity and Access Control,B2.b,Access Control,Not Achieved,"You do not have a formal process for managing user access, or the process is not consistently applied."
-B,B2,Identity and Access Control,B2.b,Access Control,Not Achieved,"Your organisation's access control process does not take into account the principle of least privilege, or you do not have a process to ensure compliance."
-B,B2,Identity and Access Control,B2.b,Access Control,Achieved,"Your organisation has a formal and managed process for user access control, which is consistently applied."
-B,B2,Identity and Access Control,B2.b,Access Control,Achieved,"Your access control process takes into account the principle of least privilege, and you have a process to ensure compliance."
-B,B2,Identity and Access Control,B2.b,Access Control,Achieved,"You have a process for the periodic review of user access to ensure that it remains appropriate."
-B,B3,Data Security,B3.a,Data Classification,Not Achieved,"You do not have a formal process for data classification, or the process is not consistently applied."
-B,B3,Data Security,B3.a,Data Classification,Not Achieved,"Your organisation's data classification process does not take into account the value of the data to your essential function(s)."
-B,B3,Data Security,B3.a,Data Classification,Achieved,"Your organisation has a formal and managed process for data classification, which is consistently applied."
-B,B3,Data Security,B3.a,Data Classification,Achieved,"Your data classification process takes into account the value of the data to your essential function(s), and you have a process to ensure compliance."
-B,B3,Data Security,B3.a,Data Classification,Achieved,"You have a process for the periodic review of data classification to ensure that it remains appropriate."
-B,B3,Data Security,B3.b,Data Protection,Not Achieved,"You do not have a formal process for data protection, or the process is not consistently applied."
-B,B3,Data Security,B3.b,Data Protection,Not Achieved,"Your organisation's data protection process does not take into account the classification of the data."
-B,B3,Data Security,B3.b,Data Protection,Achieved,"Your organisation has a formal and managed process for data protection, which is consistently applied."
-B,B3,Data Security,B3.b,Data Protection,Achieved,"Your data protection process takes into account the classification of the data, and you have a process to ensure compliance."
-B,B3,Data Security,B3.b,Data Protection,Achieved,"You have a process for the periodic review of data protection measures to ensure that they remain effective."
-B,B4,System Security,B4.a,System Security,Not Achieved,"You do not have a formal process for managing system security, or the process is not consistently applied."
-B,B4,System Security,B4.a,System Security,Not Achieved,"Your organisation's system security process does not take into account the security requirements of your essential function(s)."
-B,B4,System Security,B4.a,System Security,Achieved,"Your organisation has a formal and managed process for system security, which is consistently applied."
-B,B4,System Security,B4.a,System Security,Achieved,"Your system security process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-B,B4,System Security,B4.a,System Security,Achieved,"You have a process for the periodic review of system security measures to ensure that they remain effective."
-B,B4,System Security,B4.b,Vulnerability Management,Not Achieved,"You do not have a formal process for vulnerability management, or the process is not consistently applied."
-B,B4,System Security,B4.b,Vulnerability Management,Not Achieved,"Your organisation's vulnerability management process does not take into account the severity of the vulnerability or the potential impact to your essential function(s)."
-B,B4,System Security,B4.b,Vulnerability Management,Achieved,"Your organisation has a formal and managed process for vulnerability management, which is consistently applied."
-B,B4,System Security,B4.b,Vulnerability Management,Achieved,"Your vulnerability management process takes into account the severity of the vulnerability and the potential impact to your essential function(s), and you have a process to ensure compliance."
-B,B4,System Security,B4.b,Vulnerability Management,Achieved,"You have a process for the periodic review of vulnerability management measures to ensure that they remain effective."
-B,B5,Resilient Networks and Systems,B5.a,Resilient Networks and Systems,Not Achieved,"You do not have a formal process for ensuring the resilience of your networks and systems, or the process is not consistently applied."
-B,B5,Resilient Networks and Systems,B5.a,Resilient Networks and Systems,Not Achieved,"Your organisation's resilience process does not take into account the security requirements of your essential function(s)."
-B,B5,Resilient Networks and Systems,B5.a,Resilient Networks and Systems,Achieved,"Your organisation has a formal and managed process for ensuring the resilience of your networks and systems, which is consistently applied."
-B,B5,Resilient Networks and Systems,B5.a,Resilient Networks and Systems,Achieved,"Your resilience process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-B,B5,Resilient Networks and Systems,B5.a,Resilient Networks and Systems,Achieved,"You have a process for the periodic review of resilience measures to ensure that they remain effective."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Not Achieved,"Your essential function(s) is not monitored or the monitoring is not effective."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Not Achieved,"You do not have a process for reviewing logs or the process is not consistently applied."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Not Achieved,"Your logs do not contain sufficient information to detect and investigate security incidents, or are not retained for a sufficient period of time."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Achieved,"The network and information systems supporting your essential function(s) are actively monitored to detect anomalous behaviour and security incidents, and your logs are reviewed regularly."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Achieved,"Your logs contain sufficient information to detect and investigate security incidents, and are retained for a sufficient period of time."
-C,C1,Security Monitoring,C1.a,Logging and Monitoring,Achieved,"You have a process for the periodic review of your logging and monitoring measures to ensure that they remain effective."
-C,C1,Security Monitoring,C1.b,Security Monitoring,Not Achieved,"You do not have a formal process for security monitoring, or the process is not consistently applied."
-C,C1,Security Monitoring,C1.b,Security Monitoring,Not Achieved,"Your organisation's security monitoring process does not take into account the security requirements of your essential function(s)."
-C,C1,Security Monitoring,C1.b,Security Monitoring,Achieved,"Your organisation has a formal and managed process for security monitoring, which is consistently applied."
-C,C1,Security Monitoring,C1.b,Security Monitoring,Achieved,"Your security monitoring process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-C,C1,Security Monitoring,C1.b,Security Monitoring,Achieved,"You have a process for the periodic review of security monitoring measures to ensure that they remain effective."
-C,C2,Threat Intelligence,C2.a,Threat Intelligence,Not Achieved,"You do not have a formal process for using threat intelligence, or the process is not consistently applied."
-C,C2,Threat Intelligence,C2.a,Threat Intelligence,Not Achieved,"Your organisation's threat intelligence process does not take into account the security requirements of your essential function(s)."
-C,C2,Threat Intelligence,C2.a,Threat Intelligence,Achieved,"Your organisation has a formal and managed process for using threat intelligence, which is consistently applied."
-C,C2,Threat Intelligence,C2.a,Threat Intelligence,Achieved,"Your threat intelligence process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-C,C2,Threat Intelligence,C2.a,Threat Intelligence,Achieved,"You have a process for the periodic review of your threat intelligence measures to ensure that they remain effective."
-D,D1,Incident Management,D1.a,Incident Management,Not Achieved,"You do not have a formal process for incident management, or the process is not consistently applied."
-D,D1,Incident Management,D1.a,Incident Management,Not Achieved,"Your organisation's incident management process does not take into account the security requirements of your essential function(s)."
-D,D1,Incident Management,D1.a,Incident Management,Achieved,"Your organisation has a formal and managed process for incident management, which is consistently applied."
-D,D1,Incident Management,D1.a,Incident Management,Achieved,"Your incident management process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-D,D1,Incident Management,D1.a,Incident Management,Achieved,"You have a process for the periodic review of incident management measures to ensure that they remain effective."
-D,D1,Incident Management,D1.b,Incident Reporting,Not Achieved,"You do not have a formal process for incident reporting, or the process is not consistently applied."
-D,D1,Incident Management,D1.b,Incident Reporting,Not Achieved,"Your organisation's incident reporting process does not take into account the security requirements of your essential function(s)."
-D,D1,Incident Management,D1.b,Incident Reporting,Achieved,"Your organisation has a formal and managed process for incident reporting, which is consistently applied."
-D,D1,Incident Management,D1.b,Incident Reporting,Achieved,"Your incident reporting process takes into account the security requirements of your essential function(s), and you have a process to ensure compliance."
-D,D1,Incident Management,D1.b,Incident Reporting,Achieved,"You have a process for the periodic review of incident reporting measures to ensure that they remain effective."
-D,D2,Lessons Learned,D2.a,Lessons Learned,Not Achieved,Following incidents, lessons learned are not captured or are limited in scope.
-D,D2,Lessons Learned,D2.a,Lessons Learned,Not Achieved,Improvements arising from lessons learned following an incident are not implemented or not given sufficient organisational priority.
-D,D2,Lessons Learned,D2.a,Lessons Learned,Not Achieved,Changes are made as a ‘knee jerk’ reaction to an incident without proper analysis and testing to ensure the change is appropriate.
-D,D2,Lessons Learned,D2.a,Lessons Learned,Not Achieved,You wait until a severe or high-profile incident has occurred before you take steps to improve.
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,"You have a documented incident review process / policy which ensures that lessons learned from each incident, including near misses, are identified, captured, and acted upon. "
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,"Lessons learned cover issues with reporting, roles, governance, skills and organisational policies, processes and procedures as well as technical aspects of network and information systems."
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,"You use lessons learned to improve security measures, including updating and retesting response plans when necessary."
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,"Security improvements identified as a result of lessons learned are prioritised, with the highest priority improvements completed promptly."
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Analysis is fed to senior management and incorporated into risk management and continuous improvement.
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your organisation maximises the lessons learned by using the analysis into ‘what if’ / ’if only’ scenarios.
-D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your organisation learns from reported incidents in your sector and the wider national infrastructure.`;
-        
+        const GITHUB_REPO_RAW_URL = 'https://raw.githubusercontent.com/Erreinion/NCSC_CAF_v4/main/';
+        const GITHUB_API_URL = 'https://api.github.com/repos/Erreinion/NCSC_CAF_v4/contents/';
+
         document.addEventListener('DOMContentLoaded', () => {
             const tabs = document.querySelectorAll('.tab-btn');
             const loadIgpFile = document.getElementById('loadIgpFile');
@@ -355,7 +242,8 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
             const dashboardContent = document.getElementById('dashboardContent');
             const messageBox = document.getElementById('messageBox');
             const messageText = document.getElementById('messageText');
-            const autoLoadInfo = document.getElementById('autoLoadInfo');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadedFilenameDisplay = document.getElementById('loadedFilename');
 
             let allIGPs = {};
             let attainment = {};
@@ -365,15 +253,16 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                 messageBox.style.display = 'flex';
             };
 
+            const toggleLoading = (show) => {
+                loadingOverlay.style.display = show ? 'flex' : 'none';
+            };
+
             const parseCSV = (csv) => {
                 const lines = csv.split('\n').filter(line => line.trim() !== '');
                 if (lines.length === 0) return [];
                 
-                // Get the headers from the first line
                 const headers = lines[0].split(',').map(h => h.trim());
                 const result = [];
-
-                // Regex to split CSV by commas, but not inside double quotes.
                 const splitRegex = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
 
                 for (let i = 1; i < lines.length; i++) {
@@ -381,17 +270,13 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                     if (row.trim() === '') continue;
 
                     const values = row.split(splitRegex).map(v => v.trim());
-
-                    // Clean up the quotes and double-quotes within fields
                     const cleanedValues = values.map(v => {
-                        // Remove leading/trailing quotes and replace double quotes with a single quote
                         if (v.startsWith('"') && v.endsWith('"')) {
                             return v.substring(1, v.length - 1).replace(/""/g, '"');
                         }
                         return v;
                     });
                     
-                    // Only process rows that have the same number of fields as headers
                     if (cleanedValues.length === headers.length) {
                         const obj = headers.reduce((acc, header, index) => {
                             acc[header] = cleanedValues[index];
@@ -426,6 +311,7 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
 
             const renderAssessment = (objective, data) => {
                 const container = contentContainers[objective];
+                if (!container) return; // Guard against missing containers
                 container.innerHTML = '';
                 const principles = Object.keys(data).sort();
                 
@@ -440,12 +326,10 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                     areas.forEach(areaId => {
                         const area = principle.areas[areaId];
                         
-                        // Sanitize areaId to ensure it's a valid ID
                         const sanitizedAreaId = areaId ? areaId.replace(/[^a-zA-Z0-9-_]/g, '_') : `area_${Math.random().toString(36).substring(2, 9)}`;
                         const noteId = `note-${sanitizedAreaId}`;
                         const dropdownId = `dropdown-${sanitizedAreaId}`;
                         
-                        // Ensure the attainment object has an entry for this area before rendering
                         if (!attainment[areaId]) {
                             attainment[areaId] = { status: 'Not Assessed', note: '' };
                         }
@@ -597,7 +481,7 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                 });
             };
             
-            const initializeAssessment = (data) => {
+            const initializeAssessment = (data, filename) => {
                 allIGPs = groupIGPs(data);
                 attainment = {};
                 Object.values(allIGPs).forEach(obj => {
@@ -616,13 +500,46 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                     }
                 });
                 updateDashboard();
-            }
+                loadedFilenameDisplay.textContent = `File Loaded: ${filename}`;
+            };
 
-            const loadDefaultIGPs = () => {
-                autoLoadInfo.textContent = "This tool automatically loads the latest Indicative Good Practice (IGP) statements from the latest IGP file from <a href='https://github.com/Erreinion/NCSC_CAF_v4' class='text-sky-400 hover:text-sky-300 underline' target='_blank'>github.com/Erreinion/NCSC_CAF_v4</a>";
-                
-                const data = parseCSV(defaultIgpData);
-                initializeAssessment(data);
+            const fetchLatestIgpFile = async () => {
+                toggleLoading(true);
+                loadedFilenameDisplay.textContent = 'Loading...';
+                try {
+                    const response = await fetch(GITHUB_API_URL);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch file list: ${response.statusText}`);
+                    }
+                    const files = await response.json();
+                    
+                    const igpFiles = files.filter(file => file.name.match(/^NCSC CAF v4\.0 IGPs \d{8}\.csv$/));
+                    
+                    if (igpFiles.length === 0) {
+                        throw new Error('No IGP files found in the repository.');
+                    }
+                    
+                    const latestFile = igpFiles.sort((a, b) => {
+                        const dateA = parseInt(a.name.match(/\d{8}/)[0]);
+                        const dateB = parseInt(b.name.match(/\d{8}/)[0]);
+                        return dateB - dateA;
+                    })[0];
+                    
+                    const fileUrl = GITHUB_REPO_RAW_URL + latestFile.name;
+                    const csvResponse = await fetch(fileUrl);
+                    if (!csvResponse.ok) {
+                        throw new Error(`Failed to fetch latest IGP data: ${csvResponse.statusText}`);
+                    }
+                    const csvData = await csvResponse.text();
+                    const parsedData = parseCSV(csvData);
+                    initializeAssessment(parsedData, latestFile.name);
+                } catch (error) {
+                    console.error('Error during auto-load:', error);
+                    loadedFilenameDisplay.textContent = 'Auto-load failed. Please try a manual upload.';
+                    showMessage(`Failed to automatically load the latest IGP file. Details: ${error.message}`);
+                } finally {
+                    toggleLoading(false);
+                }
             };
             
             loadIgpFile.addEventListener('change', (event) => {
@@ -634,7 +551,7 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                     try {
                         const csvData = e.target.result;
                         const data = parseCSV(csvData);
-                        initializeAssessment(data);
+                        initializeAssessment(data, file.name);
                     } catch (error) {
                         console.error('Failed to load IGP file. It might be corrupted or not a valid CSV file.', error);
                         showMessage('Failed to load IGP file. Please ensure it is a valid CSV.');
@@ -661,6 +578,7 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                                 }
                             });
                             updateDashboard();
+                            loadedFilenameDisplay.textContent = `Assessment Loaded from: ${file.name}`;
                         } else {
                             console.error('Failed to load assessment. The file is missing "attainment" or "allIGPs" data.');
                             showMessage('Failed to load assessment. The file is not a valid assessment file.');
@@ -758,584 +676,9 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your or
                 printWindow.print();
             });
 
-            // Automatically load the default IGP file when the page loads
-            loadDefaultIGPs();
+            // Automatically load the latest IGP file from GitHub on page load
+            fetchLatestIgpFile();
         });
     </script>
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NCSC CAF v4 Assessment Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0F172A;
-            color: #E2E8F0;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .igp-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .igp-column {
-            background-color: #1F2937;
-            padding: 1rem;
-            border-radius: 0.5rem;
-        }
-        .stacked-bar-container {
-            display: flex;
-            height: 40px;
-            width: 100%;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            margin-top: 1rem;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .stacked-bar-segment {
-            height: 100%;
-            transition: width 0.5s ease-in-out;
-        }
-        @media print {
-            body {
-                color: #000;
-                background-color: #fff;
-            }
-            .dashboard-container {
-                padding: 1rem;
-                border: 1px solid #ccc;
-                border-radius: 0.5rem;
-            }
-            h1, h2, h3, h4, p {
-                color: #000;
-            }
-            .bg-slate-700, .bg-slate-800 {
-                background-color: #f0f0f0 !important;
-                -webkit-print-color-adjust: exact;
-            }
-            .rounded-lg {
-                border-radius: 0.5rem;
-            }
-            .shadow-inner {
-                box-shadow: none;
-            }
-        }
-    </style>
-</head>
-<body class="bg-slate-900 text-slate-300">
-    <div class="p-6 min-h-screen">
-        <header class="bg-slate-800 p-4 rounded-lg shadow-xl mb-6 flex justify-between items-center sticky top-0 z-50">
-            <h1 class="text-3xl font-bold text-sky-400">CAF v4 Assessment</h1>
-            <div class="flex space-x-4">
-                <input type="file" id="csvFile" accept=".csv" class="hidden">
-                <label for="csvFile" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load IGPs</label>
-                <input type="file" id="loadStateFile" accept=".json" class="hidden">
-                <label for="loadStateFile" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load Assessment</label>
-                <button id="downloadJsonBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Download Assessment</button>
-                <button id="printBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Print Dashboard</button>
-            </div>
-        </header>
-
-        <nav class="bg-slate-800 p-2 rounded-lg shadow-md mb-6 flex flex-wrap gap-2 justify-center sticky top-[96px] z-40">
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 bg-sky-600 hover:bg-sky-700 text-white text-center" data-tab="dashboard">Dashboard</button>
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveA">Objective A</button>
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveB">Objective B</button>
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveC">Objective C</button>
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="objectiveD">Objective D</button>
-            <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="instructions">Instructions</button>
-        </nav>
-
-        <main class="bg-slate-800 p-6 rounded-lg shadow-xl">
-            <div id="dashboard" class="tab-content active">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Assessment Dashboard</h2>
-                <div id="dashboardContent" class="space-y-6">
-                    <!-- Dashboard content will be dynamically generated here -->
-                </div>
-            </div>
-
-            <div id="objectiveA" class="tab-content">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective A: Managing Security Risk</h2>
-                <div id="contentA" class="space-y-8"></div>
-            </div>
-
-            <div id="objectiveB" class="tab-content">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective B: Protecting Against Cyber Attack</h2>
-                <div id="contentB" class="space-y-8"></div>
-            </div>
-
-            <div id="objectiveC" class="tab-content">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective C: Detecting Cyber Security Events</h2>
-                <div id="contentC" class="space-y-8"></div>
-            </div>
-
-            <div id="objectiveD" class="tab-content">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Objective D: Minimising the Impact of Incidents</h2>
-                <div id="contentD" class="space-y-8"></div>
-            </div>
-
-            <div id="instructions" class="tab-content">
-                <h2 class="text-2xl font-bold text-slate-200 mb-4">Instructions</h2>
-                <div class="space-y-6 text-slate-300">
-                    <div class="bg-slate-700 p-4 rounded-lg border border-slate-600">
-                        <p class="text-sm">
-                            Authored by Jordan M. Schroeder, Arxa Cyber. For any bugs or feature requests, send a note to <a href="mailto:tools@ArxaCyber.com" class="text-sky-400 hover:text-sky-300 underline">tools@ArxaCyber.com</a>.
-                        </p>
-                    </div>
-                    <p>This tool allows you to perform an assessment against the <a href="https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf" class="text-sky-400 hover:text-sky-300 underline" target="_blank">NCSC's Cyber Assessment Framework (CAF) v4</a> using a flat CSV file of the Indicative Good Practice (IGP) statements.</p>
-                    
-                    <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 1: Load the IGPs</h3>
-                        <p>Click the <strong>"Load IGPs"</strong> button and select a compatible CSV file. The file should have the following column headers in any order:</p>
-                        <ul class="list-disc list-inside ml-4 mt-2">
-                            <li><code>Objective</code></li>
-                            <li><code>Principle</code></li>
-                            <li><code>PrincipleTitle</code></li>
-                            <li><code>AreaID</code></li>
-                            <li><code>AreaTitle</code></li>
-                            <li><code>Status</code></li>
-                            <li><code>IGP</code></li>
-                        </ul>
-                        <p class="mt-4 text-sm text-slate-400">
-                            A sample IGP CSV file can be downloaded from: 
-                            <a href="https://github.com/Erreinion/NCSC_CAF_v4" class="text-sky-400 hover:text-sky-300 underline" target="_blank">https://github.com/Erreinion/NCSC_CAF_v4</a>
-                        </p>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 2: Perform the Assessment</h3>
-                        <p>Once the file is loaded, navigate through the tabs for Objectives A, B, C, and D. For each section, you can set the attainment level and add notes for each Area:</p>
-                        <ul class="list-disc list-inside ml-4 mt-2">
-                            <li>Use the <strong>"Attainment Level"</strong> dropdown to select a status: "Achieved", "Partially Achieved", "Not Achieved", or "Not Applicable".</li>
-                            <li>Use the <strong>"Notes"</strong> text area to add detailed comments or evidence for your assessment.</li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 3: Review the Dashboard</h3>
-                        <p>Click the <strong>"Dashboard"</strong> tab at any time to see a summary of your progress. The dashboard provides a visual breakdown of your assessment by Objective and overall.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 4: Save and Load</h3>
-                        <p>To save your progress, click the <strong>"Download Assessment"</strong> button. This will download a JSON file with your current assessment status. To resume your work later, click the <strong>"Load Assessment"</strong> button and select this JSON file.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 5: Print a Report</h3>
-                        <p>Click the <strong>"Print Dashboard"</strong> button to generate a printable report of your assessment summary.</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tabs = document.querySelectorAll('.tab-btn');
-            const csvFile = document.getElementById('csvFile');
-            const loadStateFile = document.getElementById('loadStateFile');
-            const downloadJsonBtn = document.getElementById('downloadJsonBtn');
-            const printBtn = document.getElementById('printBtn');
-            const contentContainers = {
-                'A': document.getElementById('contentA'),
-                'B': document.getElementById('contentB'),
-                'C': document.getElementById('contentC'),
-                'D': document.getElementById('contentD')
-            };
-            const dashboardContent = document.getElementById('dashboardContent');
-
-            let allIGPs = {};
-            let attainment = {};
-
-            const parseCSV = (csv) => {
-                const lines = csv.split('\n').filter(line => line.trim() !== '');
-                if (lines.length === 0) return [];
-                const headers = lines[0].split(',').map(h => h.trim());
-                const result = [];
-
-                // Regex to split CSV by commas, but not inside double quotes.
-                const splitRegex = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
-
-                for (let i = 1; i < lines.length; i++) {
-                    const row = lines[i];
-                    if (row.trim() === '') continue;
-
-                    const values = row.split(splitRegex).map(v => v.trim());
-
-                    // Clean up the quotes and double-quotes within fields
-                    const cleanedValues = values.map(v => {
-                        // Remove leading/trailing quotes and replace double quotes with a single quote
-                        if (v.startsWith('"') && v.endsWith('"')) {
-                            return v.substring(1, v.length - 1).replace(/""/g, '"');
-                        }
-                        return v;
-                    });
-                    
-                    // Only process rows that have the same number of fields as headers
-                    if (cleanedValues.length === headers.length) {
-                        const obj = headers.reduce((acc, header, index) => {
-                            acc[header] = cleanedValues[index];
-                            return acc;
-                        }, {});
-                        result.push(obj);
-                    }
-                }
-                return result;
-            };
-
-            const groupIGPs = (data) => {
-                const grouped = {};
-                data.forEach(item => {
-                    const obj = item.Objective;
-                    const principle = item.Principle;
-                    const area = item.AreaID;
-                    if (!grouped[obj]) grouped[obj] = {};
-                    if (!grouped[obj][principle]) {
-                        grouped[obj][principle] = { title: item.PrincipleTitle, areas: {} };
-                    }
-                    if (!grouped[obj][principle].areas[area]) {
-                        grouped[obj][principle].areas[area] = { title: item.AreaTitle, igps: [] };
-                    }
-                    grouped[obj][principle].areas[area].igps.push(item);
-                });
-                return grouped;
-            };
-
-            const renderAssessment = (objective, data) => {
-                const container = contentContainers[objective];
-                container.innerHTML = '';
-                const principles = Object.keys(data).sort();
-                
-                const statusOrder = { 'Not Achieved': 1, 'Partially Achieved': 2, 'Achieved': 3 };
-
-                principles.forEach(principleId => {
-                    const principle = data[principleId];
-                    const principleDiv = document.createElement('div');
-                    principleDiv.className = "mb-10";
-                    principleDiv.innerHTML = `<h3 class="text-2xl font-bold text-sky-400 mb-4">${principleId} - ${principle.title}</h3>`;
-                    container.appendChild(principleDiv);
-
-                    const areas = Object.keys(principle.areas).sort();
-                    areas.forEach(areaId => {
-                        const area = principle.areas[areaId];
-                        
-                        // Sanitize areaId to ensure it's a valid ID
-                        const sanitizedAreaId = areaId ? areaId.replace(/[^a-zA-Z0-9-_]/g, '_') : `area_${Math.random().toString(36).substring(2, 9)}`;
-                        const noteId = `note-${sanitizedAreaId}`;
-                        const dropdownId = `dropdown-${sanitizedAreaId}`;
-                        
-                        // Ensure the attainment object has an entry for this area before rendering
-                        if (!attainment[areaId]) {
-                            attainment[areaId] = { status: 'Not Assessed', note: '' };
-                        }
-
-                        const areaDiv = document.createElement('div');
-                        areaDiv.className = "bg-slate-700 p-6 rounded-lg shadow-inner mb-6";
-                        areaDiv.innerHTML = `
-                            <h4 class="text-xl font-semibold text-slate-100 mb-2">${areaId} - ${area.title}</h4>
-                            <div class="mb-4">
-                                <label for="${dropdownId}" class="block text-sm font-medium text-slate-400 mb-2">Attainment Level:</label>
-                                <select id="${dropdownId}" class="w-full p-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                    <option value="Not Assessed">Not Assessed</option>
-                                    <option value="Not Achieved">Not Achieved</option>
-                                    <option value="Partially Achieved">Partially Achieved</option>
-                                    <option value="Achieved">Achieved</option>
-                                    <option value="Not Applicable">Not Applicable</option>
-                                </select>
-                            </div>
-                            <div class="mb-4">
-                                <label for="${noteId}" class="block text-sm font-medium text-slate-400 mb-2">Notes:</label>
-                                <textarea id="${noteId}" rows="4" class="w-full p-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
-                            </div>
-                            <div class="igp-grid">
-                                <div class="igp-column">
-                                    <h5 class="text-sm font-bold text-red-400 mb-2">Not Achieved</h5>
-                                    <ul class="list-disc list-inside space-y-2 text-sm">
-                                        ${area.igps.filter(igp => igp.Status === 'Not Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
-                                    </ul>
-                                </div>
-                                <div class="igp-column">
-                                    <h5 class="text-sm font-bold text-yellow-400 mb-2">Partially Achieved</h5>
-                                    <ul class="list-disc list-inside space-y-2 text-sm">
-                                        ${area.igps.filter(igp => igp.Status === 'Partially Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
-                                    </ul>
-                                </div>
-                                <div class="igp-column">
-                                    <h5 class="text-sm font-bold text-green-400 mb-2">Achieved</h5>
-                                    <ul class="list-disc list-inside space-y-2 text-sm">
-                                        ${area.igps.filter(igp => igp.Status === 'Achieved').map(igp => `<li>${igp.IGP}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                        `;
-                        principleDiv.appendChild(areaDiv);
-
-                        const dropdown = areaDiv.querySelector(`#${dropdownId}`);
-                        const note = areaDiv.querySelector(`#${noteId}`);
-                        
-                        if (dropdown && note) {
-                            const savedStatus = attainment[areaId]?.status || 'Not Assessed';
-                            dropdown.value = savedStatus;
-                            note.value = attainment[areaId]?.note || '';
-        
-                            dropdown.addEventListener('change', (e) => {
-                                attainment[areaId].status = e.target.value;
-                                updateDashboard();
-                            });
-        
-                            note.addEventListener('input', (e) => {
-                                attainment[areaId].note = e.target.value;
-                            });
-                        } else {
-                            console.error(`Could not find dropdown or note for areaId: ${areaId}. HTML might be malformed or AreaID is invalid.`);
-                        }
-                    });
-                });
-            };
-
-            const updateDashboard = () => {
-                dashboardContent.innerHTML = '';
-                let totalAreas = 0;
-                Object.values(allIGPs).forEach(obj => {
-                    Object.values(obj).forEach(principle => {
-                        totalAreas += Object.keys(principle.areas).length;
-                    });
-                });
-
-                const assessedAreas = Object.values(attainment).filter(a => a.status !== 'Not Assessed' && a.status !== 'Not Applicable').length;
-                const assessedPercentage = totalAreas > 0 ? ((assessedAreas / totalAreas) * 100).toFixed(1) : 0;
-
-                const dashboardHTML = `
-                    <div class="p-6 bg-slate-700 rounded-lg shadow-inner flex justify-between items-center">
-                        <h3 class="text-xl font-semibold">Overall Assessment Progress</h3>
-                        <div class="text-2xl font-bold">${assessedPercentage}% Assessed</div>
-                    </div>
-                `;
-                dashboardContent.innerHTML = dashboardHTML;
-
-                const objectiveData = {};
-                Object.keys(contentContainers).forEach(obj => {
-                    objectiveData[obj] = {
-                        'Achieved': 0,
-                        'Partially Achieved': 0,
-                        'Not Achieved': 0,
-                        'Not Assessed': 0,
-                        'Not Applicable': 0
-                    };
-                });
-                
-                Object.keys(attainment).forEach(areaId => {
-                    const obj = areaId[0];
-                    const status = attainment[areaId].status;
-                    if (objectiveData[obj]) {
-                        objectiveData[obj][status]++;
-                    }
-                });
-
-                Object.keys(objectiveData).forEach(obj => {
-                    const totalIGPsForObjective = allIGPs[obj] ? Object.values(allIGPs[obj]).reduce((sum, principle) => sum + Object.keys(principle.areas).length, 0) : 0;
-                    
-                    const notAchievedCount = objectiveData[obj]['Not Achieved'];
-                    const partiallyAchievedCount = objectiveData[obj]['Partially Achieved'];
-                    const achievedCount = objectiveData[obj]['Achieved'];
-                    const notAssessedCount = objectiveData[obj]['Not Assessed'];
-                    const notApplicableCount = objectiveData[obj]['Not Applicable'];
-                    
-                    const totalForBar = notAchievedCount + partiallyAchievedCount + achievedCount + notAssessedCount;
-
-                    const notAchievedPercentage = totalForBar > 0 ? ((notAchievedCount / totalForBar) * 100).toFixed(1) : 0;
-                    const partiallyAchievedPercentage = totalForBar > 0 ? ((partiallyAchievedCount / totalForBar) * 100).toFixed(1) : 0;
-                    const achievedPercentage = totalForBar > 0 ? ((achievedCount / totalForBar) * 100).toFixed(1) : 0;
-                    const notAssessedPercentage = totalForBar > 0 ? ((notAssessedCount / totalForBar) * 100).toFixed(1) : 0;
-                    
-                    const objDiv = document.createElement('div');
-                    objDiv.className = "p-6 bg-slate-700 rounded-lg shadow-inner";
-                    objDiv.innerHTML = `
-                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Objective ${obj} Progress</h3>
-                        
-                        <div class="stacked-bar-container">
-                            <div class="stacked-bar-segment bg-red-500" style="width: ${notAchievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-yellow-500" style="width: ${partiallyAchievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-green-500" style="width: ${achievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-gray-500" style="width: ${notAssessedPercentage}%"></div>
-                        </div>
-
-                        <div class="space-y-2 text-sm mt-4">
-                            <p><strong>Total Subsections:</strong> ${totalIGPsForObjective}</p>
-                            <p><strong>Assessed:</strong> ${((assessedAreas / totalAreas) * 100).toFixed(1)}%</p>
-                            <div class="grid grid-cols-2 gap-2 mt-4">
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Achieved: ${objectiveData[obj]['Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Partially Achieved: ${objectiveData[obj]['Partially Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>Not Achieved: ${objectiveData[obj]['Not Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>Not Assessed: ${objectiveData[obj]['Not Assessed']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-slate-500 mr-2"></span>Not Applicable: ${objectiveData[obj]['Not Applicable']}</span>
-                            </div>
-                        </div>
-                    `;
-                    dashboardContent.appendChild(objDiv);
-                });
-            };
-            
-            csvFile.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const csvData = e.target.result;
-                    const data = parseCSV(csvData);
-                    allIGPs = groupIGPs(data);
-
-                    // Initialize the attainment object with 'Not Assessed' for all areas
-                    attainment = {};
-                    Object.values(allIGPs).forEach(obj => {
-                        Object.values(obj).forEach(principle => {
-                            Object.keys(principle.areas).forEach(areaId => {
-                                attainment[areaId] = { status: 'Not Assessed', note: '' };
-                            });
-                        });
-                    });
-                    
-                    Object.keys(contentContainers).forEach(obj => {
-                        if (allIGPs[obj]) {
-                            renderAssessment(obj, allIGPs[obj]);
-                        } else {
-                            contentContainers[obj].innerHTML = `<p class="text-center text-slate-400">No data found for Objective ${obj}.</p>`;
-                        }
-                    });
-                    
-                    // Initial rendering of the dashboard
-                    updateDashboard();
-                };
-                reader.readAsText(file);
-            });
-
-            loadStateFile.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const loadedData = JSON.parse(e.target.result);
-                        if (loadedData && loadedData.attainment && loadedData.allIGPs) {
-                            attainment = loadedData.attainment;
-                            allIGPs = loadedData.allIGPs;
-
-                            Object.keys(contentContainers).forEach(obj => {
-                                if (allIGPs[obj]) {
-                                    renderAssessment(obj, allIGPs[obj]);
-                                }
-                            });
-                            updateDashboard();
-                        } else {
-                            console.error('Failed to load assessment. The file is missing "attainment" or "allIGPs" data.');
-                        }
-                    } catch (error) {
-                        console.error('Failed to load file. It might be corrupted or not a valid JSON file.', error);
-                    }
-                };
-                reader.readAsText(file);
-            });
-
-            downloadJsonBtn.addEventListener('click', () => {
-                const assessmentState = {
-                    attainment: attainment,
-                    allIGPs: allIGPs
-                };
-                const dataStr = JSON.stringify(assessmentState, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                const date = new Date().toISOString().slice(0, 10);
-                a.download = `CAF v4 Assessment ${date}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('bg-sky-600', 'text-white'));
-                    tabs.forEach(t => t.classList.add('hover:bg-slate-700'));
-                    tab.classList.remove('hover:bg-slate-700');
-                    tab.classList.add('bg-sky-600', 'text-white');
-
-                    const tabId = tab.getAttribute('data-tab');
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-
-            printBtn.addEventListener('click', () => {
-                const dashboardToPrint = document.getElementById('dashboard').cloneNode(true);
-                const printWindow = window.open('', '_blank');
-                
-                printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <title>CAF v4 Dashboard Report</title>
-                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-                        <style>
-                            body { font-family: 'Inter', sans-serif; background-color: #fff; color: #000; padding: 2rem; }
-                            h1, h2, h3, h4, p, strong { color: #000; }
-                            .space-y-6 > div { margin-bottom: 1.5rem; }
-                            .p-6 { padding: 1.5rem; }
-                            .bg-slate-700 { background-color: #f0f0f0; }
-                            .rounded-lg { border-radius: 0.5rem; }
-                            .shadow-inner { box-shadow: none; }
-                            .flex { display: flex; }
-                            .justify-between { justify-content: space-between; }
-                            .items-center { align-items: center; }
-                            .text-xl { font-size: 1.25rem; }
-                            .font-semibold { font-weight: 600; }
-                            .text-2xl { font-size: 1.5rem; }
-                            .font-bold { font-weight: 700; }
-                            .grid-cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                            .gap-2 { gap: 0.5rem; }
-                            .mt-4 { margin-top: 1rem; }
-                            .w-3 { width: 0.75rem; }
-                            .h-3 { height: 0.75rem; }
-                            .rounded-full { border-radius: 9999px; }
-                            .mr-2 { margin-right: 0.5rem; }
-                            .bg-green-500 { background-color: #22c55e; }
-                            .bg-yellow-500 { background-color: #eab308; }
-                            .bg-red-500 { background-color: #ef4444; }
-                            .bg-gray-500 { background-color: #6b7280; }
-                            .bg-slate-500 { background-color: #64748b; }
-                            .stacked-bar-container { display: flex; height: 40px; width: 100%; border-radius: 0.5rem; overflow: hidden; margin-top: 1rem; }
-                            .stacked-bar-segment { height: 100%; transition: width 0.5s ease-in-out; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1 class="text-3xl font-bold mb-6 text-center">CAF v4 Assessment Report</h1>
-                        ${dashboardToPrint.innerHTML}
-                    </body>
-                    </html>
-                `);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-            });
-        });
-    </script>
-</body>
-</html>
-
