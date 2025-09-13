@@ -513,16 +513,30 @@
                     }
                     const files = await response.json();
                     
-                    const igpFiles = files.filter(file => file.name.match(/^NCSC CAF v4\.0 IGPs \d{8}\.csv$/));
+                    const igpFiles = files
+                        .filter(file => file.name.match(/^NCSC CAF v\d+\.\d+ IGPs \d{8}\.csv$/))
+                        .map(file => {
+                            const match = file.name.match(/^NCSC CAF v(\d+)\.(\d+) IGPs (\d{8})\.csv$/);
+                            return {
+                                name: file.name,
+                                majorVersion: parseInt(match[1]),
+                                minorVersion: parseInt(match[2]),
+                                date: parseInt(match[3])
+                            };
+                        });
                     
                     if (igpFiles.length === 0) {
-                        throw new Error('No IGP files found in the repository.');
+                        throw new Error('No valid IGP files found in the repository.');
                     }
                     
                     const latestFile = igpFiles.sort((a, b) => {
-                        const dateA = parseInt(a.name.match(/\d{8}/)[0]);
-                        const dateB = parseInt(b.name.match(/\d{8}/)[0]);
-                        return dateB - dateA;
+                        if (a.majorVersion !== b.majorVersion) {
+                            return b.majorVersion - a.majorVersion;
+                        }
+                        if (a.minorVersion !== b.minorVersion) {
+                            return b.minorVersion - a.minorVersion;
+                        }
+                        return b.date - a.date;
                     })[0];
                     
                     const fileUrl = GITHUB_REPO_RAW_URL + latestFile.name;
