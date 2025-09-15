@@ -1,5 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Version: 202509141345 | Author: Jordan M. Schroeder | Date: 2025-09-14 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,6 +43,7 @@
             height: 100%;
             transition: width 0.5s ease-in-out;
         }
+        #profileComplianceSection { page-break-before: always; break-before: page; }
         .message-box {
             position: fixed;
             top: 20%;
@@ -106,7 +108,7 @@
             }
             .bg-slate-700, .bg-slate-800 {
                 background-color: #f0f0f0 !important;
-                -webkit-print-color-adjust: exact;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
             }
             .rounded-lg {
                 border-radius: 0.5rem;
@@ -128,7 +130,9 @@
             <div class="flex space-x-4">
                 <input type="file" id="loadIgpFile" accept=".csv" class="hidden">
                 <label for="loadIgpFile" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load IGP</label>
-                <input type="file" id="loadStateFile" accept=".json" class="hidden">
+                <input type="file" id="loadProfileFile" accept=".csv" class="hidden">
+                <label for="loadProfileFile" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load Profile</label>
+                <input type="file" id="loadStateFile" accept=".application/json,.json" class="hidden">
                 <label for="loadStateFile" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 text-center">Load Assessment</label>
                 <button id="downloadJsonBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Download Assessment</button>
                 <button id="printBtn" class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-center">Print Dashboard</button>
@@ -144,7 +148,7 @@
             <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 hover:bg-slate-700 text-center" data-tab="instructions">Instructions</button>
         </nav>
 
-        <main class="bg-slate-800 p-6 rounded-lg shadow-xl">
+        <main class="max-w-screen-xl mx-auto bg-slate-800 p-6 rounded-lg shadow-xl">
             <div id="dashboard" class="tab-content active">
                 <h2 class="text-2xl font-bold text-slate-200 mb-4">Assessment Dashboard</h2>
                 <div id="dashboardContent" class="space-y-6">
@@ -186,8 +190,9 @@
                     <p>This tool allows you to perform an assessment against the <a href="https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf" class="text-sky-400 hover:text-sky-300 underline" target="_blank">NCSC's Cyber Assessment Framework (CAF) v4</a> using a flat CSV file of the Indicative Good Practice (IGP) statements.</p>
                     
                     <div>
-                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 1: Get the Indicative Good Practice (IGP) Statements</h3>
+                        <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 1: Get the Indicative Good Practice (IGP) Statements and Sector Profile</h3>
                         <p>The IGP statements are automatically loaded by selecting the most recent IGP file from: <a href="https://github.com/Erreinion/NCSC_CAF_v4/" class="text-sky-400 hover:text-sky-300 underline" target="_blank">https://github.com/Erreinion/NCSC_CAF_v4/</a>. You can also use the <strong>"Load IGP"</strong> button to load a CSV file from your computer. Loading a new IGP file will reset the current assessment.</p>
+                        <p>Additionally, you can use the <strong>"Load Profile"</strong> button to load a Sector Profile CSV file. This is an optional step that adds a new compliance section to the dashboard.</p>
                     </div>
 
                     <div>
@@ -201,12 +206,12 @@
 
                     <div>
                         <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 3: Review the Dashboard</h3>
-                        <p>Click the <strong>"Dashboard"</strong> tab at any time to see a summary of your progress. The dashboard provides a visual breakdown of your assessment by Objective and overall.</p>
+                        <p>Click the <strong>"Dashboard"</strong> tab at any time to see a summary of your progress. The dashboard provides a visual breakdown of your assessment by Objective, and if a Sector Profile is loaded, a breakdown of your compliance against that profile.</p>
                     </div>
 
                     <div>
                         <h3 class="text-xl font-semibold text-sky-400 mb-2">Step 4: Save and Load</h3>
-                        <p>To save your progress, click the <strong>"Download Assessment"</strong> button. This will download a JSON file with your current assessment status. To resume your work later, click the <strong>"Load Assessment"</strong> button and select this JSON file.</p>
+                        <p>To save your progress, click the <strong>"Download Assessment"</strong> button. This will download a JSON file with your current assessment status. To resume your work later, click the <strong>"Load Assessment"</strong> button and select a previously downloaded assessment JSON file.</p>
                     </div>
 
                     <div>
@@ -219,8 +224,11 @@
     </div>
 
     <div id="messageBox" class="message-box">
-        <p id="messageText"></p>
-        <button onclick="document.getElementById('messageBox').style.display='none'">OK</button>
+    <div class="flex items-center gap-3 mb-2">
+        <span id="messageIcon" class="inline-flex items-center justify-center w-6 h-6" aria-hidden="true"></span>
+        <p id="messageText" class="m-0"></p>
+    </div>
+    <button onclick="document.getElementById('messageBox').style.display='none'">OK</button>
     </div>
 
     <script>
@@ -230,6 +238,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const tabs = document.querySelectorAll('.tab-btn');
             const loadIgpFile = document.getElementById('loadIgpFile');
+            const loadProfileFile = document.getElementById('loadProfileFile');
             const loadStateFile = document.getElementById('loadStateFile');
             const downloadJsonBtn = document.getElementById('downloadJsonBtn');
             const printBtn = document.getElementById('printBtn');
@@ -242,16 +251,35 @@
             const dashboardContent = document.getElementById('dashboardContent');
             const messageBox = document.getElementById('messageBox');
             const messageText = document.getElementById('messageText');
+            const messageIcon = document.getElementById('messageIcon');
             const loadingOverlay = document.getElementById('loadingOverlay');
             const loadedFilenameDisplay = document.getElementById('loadedFilename');
 
             let allIGPs = {};
             let attainment = {};
+            let sectorProfile = null;
+            let profileFilename = null;
+            let areaToObjective = {};
+            const objectiveTitles = { 'A': 'Managing Security Risk', 'B': 'Protecting Against Cyber Attack', 'C': 'Detecting Cyber Security Events', 'D': 'Minimizing The Impact Of Cyber Security Incidents' };
 
-            const showMessage = (message) => {
-                messageText.textContent = message;
-                messageBox.style.display = 'flex';
-            };
+            const showMessage = (message, type = 'info') => {
+    messageText.textContent = message;
+    let iconSvg = '';
+    switch (type) {
+        case 'success':
+            iconSvg = '<svg viewBox="0 0 24 24" class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2l4-4"/><circle cx="12" cy="12" r="9"/></svg>';
+            break;
+        case 'error':
+            iconSvg = '<svg viewBox="0 0 24 24" class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9l-6 6M9 9l6 6"/><circle cx="12" cy="12" r="9"/></svg>';
+            break;
+        default:
+            iconSvg = '<svg viewBox="0 0 24 24" class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M11 12h2v4h-2z"/><circle cx="12" cy="12" r="9"/></svg>';
+    }
+    if (typeof messageIcon !== 'undefined' && messageIcon) {
+        messageIcon.innerHTML = iconSvg;
+    }
+    messageBox.style.display = 'flex';
+};
 
             const toggleLoading = (show) => {
                 loadingOverlay.style.display = show ? 'flex' : 'none';
@@ -287,6 +315,49 @@
                 }
                 return result;
             };
+            
+            // New function to parse assessment JSON data
+            const parseAssessmentCSV = (csv) => {
+                const lines = csv.split('\n').filter(line => line.trim() !== '');
+                if (lines.length === 0) return {};
+                
+                const headers = lines[0].split(',').map(h => h.trim());
+                const attainmentData = {};
+                const splitRegex = /,(?=(?:[^"]*"[^"]*")*[^"]*$)/;
+
+                const areaIdIndex = headers.indexOf('AreaID');
+                const attainmentIndex = headers.indexOf('Attainment');
+                const notesIndex = headers.indexOf('Notes');
+                
+                if (areaIdIndex === -1 || attainmentIndex === -1) {
+                    throw new Error("CSV must contain 'AreaID' and 'Attainment' columns.");
+                }
+
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i];
+                    if (row.trim() === '') continue;
+                    
+                    const values = row.split(splitRegex).map(v => v.trim());
+                    const cleanedValues = values.map(v => {
+                        if (v.startsWith('"') && v.endsWith('"')) {
+                            return v.substring(1, v.length - 1).replace(/""/g, '"');
+                        }
+                        return v;
+                    });
+                    
+                    if (cleanedValues.length >= headers.length) {
+                        const areaId = cleanedValues[areaIdIndex];
+                        const attainmentStatus = cleanedValues[attainmentIndex];
+                        const note = notesIndex !== -1 ? cleanedValues[notesIndex] : '';
+                        
+                        if (areaId && attainmentStatus) {
+                            attainmentData[areaId] = { status: attainmentStatus, note: note };
+                        }
+                    }
+                }
+                return attainmentData;
+            };
+
 
             const groupIGPs = (data) => {
                 const grouped = {};
@@ -294,10 +365,12 @@
                     const obj = item.Objective;
                     const principle = item.Principle;
                     const principleTitle = item.PrincipleTitle;
+                    const objectiveTitle = item.ObjectiveTitle || '';
                     const area = item.AreaID;
                     const areaTitle = item.AreaTitle;
 
                     if (!grouped[obj]) grouped[obj] = {};
+                    if (!objectiveTitles[obj] && objectiveTitle) objectiveTitles[obj] = objectiveTitle;
                     if (!grouped[obj][principle]) {
                         grouped[obj][principle] = { title: principleTitle, areas: {} };
                     }
@@ -336,16 +409,20 @@
 
                         const areaDiv = document.createElement('div');
                         areaDiv.className = "bg-slate-700 p-6 rounded-lg shadow-inner mb-6";
+                            const hasPartial = area.igps.some(igp => igp.Status === 'Partially Achieved');
+                            const optionsHtml = `
+                                <option value="Not Assessed">Not Assessed</option>
+                                <option value="Not Achieved">Not Achieved</option>
+                                ${hasPartial ? `<option value="Partially Achieved">Partially Achieved</option>` : ``}
+                                <option value="Achieved">Achieved</option>
+                                <option value="Not Applicable">Not Applicable</option>`;
+                            
                         areaDiv.innerHTML = `
                             <h4 class="text-xl font-semibold text-slate-100 mb-2">${areaId} - ${area.title}</h4>
                             <div class="mb-4">
                                 <label for="${dropdownId}" class="block text-sm font-medium text-slate-400 mb-2">Attainment Level:</label>
                                 <select id="${dropdownId}" class="w-full p-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                    <option value="Not Assessed">Not Assessed</option>
-                                    <option value="Not Achieved">Not Achieved</option>
-                                    <option value="Partially Achieved">Partially Achieved</option>
-                                    <option value="Achieved">Achieved</option>
-                                    <option value="Not Applicable">Not Applicable</option>
+                                    ${optionsHtml}
                                 </select>
                             </div>
                             <div class="mb-4">
@@ -398,8 +475,65 @@
                 });
             };
 
+            const calculateCompliance = () => {
+    const attainmentOrder = {
+        'Not Assessed': 0,
+        'Not Achieved': 1,
+        'Partially Achieved': 2,
+        'Achieved': 3,
+        'Not Applicable': 4
+    };
+
+    const compliance = {};
+    if (!sectorProfile) return compliance;
+
+    const findObjectiveForPrinciple = (principleId) => {
+        for (const objKey of Object.keys(allIGPs)) {
+            if (allIGPs[objKey] && allIGPs[objKey][principleId]) return objKey;
+        }
+        return null;
+    };
+
+    Object.keys(sectorProfile).forEach(key => {
+        const requirement = sectorProfile[key];
+        // Area-level requirement
+        if (attainment[key] !== undefined) {
+            const objective = (typeof areaToObjective !== 'undefined' && areaToObjective[key]) || key[0];
+            if (!compliance[objective]) compliance[objective] = { achieved: 0, failed: 0, notAssessed: 0 };
+            const ua = attainment[key];
+            if ((ua && ua.status === 'Not Applicable') || requirement.level === 'Not Applicable') return;
+            if (!ua || ua.status === 'Not Assessed') { compliance[objective].notAssessed++; return; }
+            const ul = attainmentOrder[ua.status] ?? 0;
+            const rl = attainmentOrder[requirement.level] ?? 0;
+            if (ul >= rl) compliance[objective].achieved++; else compliance[objective].failed++;
+            return;
+        }
+        // Principle-level requirement
+        const objForPrinciple = findObjectiveForPrinciple(key);
+        if (objForPrinciple && allIGPs[objForPrinciple] && allIGPs[objForPrinciple][key]) {
+            if (!compliance[objForPrinciple]) compliance[objForPrinciple] = { achieved: 0, failed: 0, notAssessed: 0 };
+            const areas = allIGPs[objForPrinciple][key].areas || {};
+            for (const areaId of Object.keys(areas)) {
+                const ua = attainment[areaId];
+                if ((ua && ua.status === 'Not Applicable') || requirement.level === 'Not Applicable') continue;
+                if (!ua || ua.status === 'Not Assessed') { compliance[objForPrinciple].notAssessed++; continue; }
+                const ul = attainmentOrder[ua.status] ?? 0;
+                const rl = attainmentOrder[requirement.level] ?? 0;
+                if (ul >= rl) compliance[objForPrinciple].achieved++; else compliance[objForPrinciple].failed++;
+            }
+            return;
+        }
+        // If key is unknown, ignore it safely
+    });
+
+    return compliance;
+};
+
+
             const updateDashboard = () => {
-                dashboardContent.innerHTML = '';
+                let dashboardHtml = '';
+
+                // Overall Assessment Progress Section
                 let totalAreas = 0;
                 Object.values(allIGPs).forEach(obj => {
                     Object.values(obj).forEach(principle => {
@@ -410,14 +544,16 @@
                 const assessedAreas = Object.values(attainment).filter(a => a.status !== 'Not Assessed' && a.status !== 'Not Applicable').length;
                 const assessedPercentage = totalAreas > 0 ? ((assessedAreas / totalAreas) * 100).toFixed(1) : 0;
 
-                const dashboardHTML = `
+                dashboardHtml += `
+                    <div class="flex justify-end mb-2 gap-2">
+                    </div>
                     <div class="p-6 bg-slate-700 rounded-lg shadow-inner flex justify-between items-center">
                         <h3 class="text-xl font-semibold">Overall Assessment Progress</h3>
                         <div class="text-2xl font-bold">${assessedPercentage}% Assessed</div>
                     </div>
                 `;
-                dashboardContent.innerHTML = dashboardHTML;
 
+                // Objective Progress Sections
                 const objectiveData = {};
                 Object.keys(contentContainers).forEach(obj => {
                     objectiveData[obj] = {
@@ -430,7 +566,7 @@
                 });
                 
                 Object.keys(attainment).forEach(areaId => {
-                    const obj = areaId[0];
+                    const obj = areaToObjective[areaId] || areaId[0];
                     const status = attainment[areaId].status;
                     if (objectiveData[obj]) {
                         objectiveData[obj][status]++;
@@ -444,7 +580,6 @@
                     const partiallyAchievedCount = objectiveData[obj]['Partially Achieved'];
                     const achievedCount = objectiveData[obj]['Achieved'];
                     const notAssessedCount = objectiveData[obj]['Not Assessed'];
-                    const notApplicableCount = objectiveData[obj]['Not Applicable'];
                     
                     const totalForBar = notAchievedCount + partiallyAchievedCount + achievedCount + notAssessedCount;
 
@@ -453,41 +588,173 @@
                     const achievedPercentage = totalForBar > 0 ? ((achievedCount / totalForBar) * 100).toFixed(1) : 0;
                     const notAssessedPercentage = totalForBar > 0 ? ((notAssessedCount / totalForBar) * 100).toFixed(1) : 0;
                     
-                    const objDiv = document.createElement('div');
-                    objDiv.className = "p-6 bg-slate-700 rounded-lg shadow-inner";
-                    objDiv.innerHTML = `
-                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Objective ${obj} Progress</h3>
-                        
-                        <div class="stacked-bar-container">
-                            <div class="stacked-bar-segment bg-red-500" style="width: ${notAchievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-yellow-500" style="width: ${partiallyAchievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-green-500" style="width: ${achievedPercentage}%"></div>
-                            <div class="stacked-bar-segment bg-gray-500" style="width: ${notAssessedPercentage}%"></div>
-                        </div>
+                    dashboardHtml += `
+                        <div class="p-6 bg-slate-700 rounded-lg shadow-inner">
+                            <h3 class="text-xl font-semibold text-slate-100 mb-2">Objective ${obj}${objectiveTitles[obj] ? `: ${objectiveTitles[obj]}` : ``} Progress</h3>
+                            
+                            <div class="stacked-bar-container">
+                                <div class="stacked-bar-segment bg-red-500" style="width: ${notAchievedPercentage}%"></div>
+                                <div class="stacked-bar-segment bg-yellow-500" style="width: ${partiallyAchievedPercentage}%"></div>
+                                <div class="stacked-bar-segment bg-green-500" style="width: ${achievedPercentage}%"></div>
+                                <div class="stacked-bar-segment bg-gray-500" style="width: ${notAssessedPercentage}%"></div>
+                            </div>
 
-                        <div class="space-y-2 text-sm mt-4">
-                            <p><strong>Total Subsections:</strong> ${totalIGPsForObjective}</p>
-                            <p><strong>Assessed:</strong> ${((assessedAreas / totalAreas) * 100).toFixed(1)}%</p>
-                            <div class="grid grid-cols-2 gap-2 mt-4">
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Achieved: ${objectiveData[obj]['Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Partially Achieved: ${objectiveData[obj]['Partially Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>Not Achieved: ${objectiveData[obj]['Not Achieved']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>Not Assessed: ${objectiveData[obj]['Not Assessed']}</span>
-                                <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-slate-500 mr-2"></span>Not Applicable: ${objectiveData[obj]['Not Applicable']}</span>
+                            <div class="space-y-2 text-sm mt-4">
+                                <p><strong>Total Subsections:</strong> ${totalIGPsForObjective}</p>
+                                <p><strong>Assessed:</strong> ${((assessedAreas / totalAreas) * 100).toFixed(1)}%</p>
+                                <div class="grid grid-cols-2 gap-2 mt-4">
+                                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Achieved: ${objectiveData[obj]['Achieved']}</span>
+                                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Partially Achieved: ${objectiveData[obj]['Partially Achieved']}</span>
+                                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>Not Achieved: ${objectiveData[obj]['Not Achieved']}</span>
+                                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>Not Assessed: ${objectiveData[obj]['Not Assessed']}</span>
+                                    <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-slate-500 mr-2"></span>Not Applicable: ${objectiveData[obj]['Not Applicable']}</span>
+                                </div>
                             </div>
                         </div>
                     `;
-                    dashboardContent.appendChild(objDiv);
-                });
+                    // Principle breakdown under Objective
+                    if (allIGPs[obj]) {
+                        Object.keys(allIGPs[obj]).forEach(principleId => {
+                            const principle = allIGPs[obj][principleId];
+                            const counts = { 'Achieved': 0, 'Partially Achieved': 0, 'Not Achieved': 0, 'Not Assessed': 0 };
+                            Object.keys(principle.areas).forEach(areaId => {
+                                const st = (attainment[areaId]?.status) || 'Not Assessed';
+                                if (st === 'Not Applicable') return;
+                                counts[st] = (counts[st] || 0) + 1;
+                            });
+                            const totalForBarP = counts['Achieved'] + counts['Partially Achieved'] + counts['Not Achieved'] + counts['Not Assessed'];
+                            const pNotAchievedPct = totalForBarP > 0 ? (counts['Not Achieved'] / totalForBarP) * 100 : 0;
+                            const pPartiallyAchievedPct = totalForBarP > 0 ? (counts['Partially Achieved'] / totalForBarP) * 100 : 0;
+                            const pAchievedPct = totalForBarP > 0 ? (counts['Achieved'] / totalForBarP) * 100 : 0;
+                            const pNotAssessedPct = totalForBarP > 0 ? (counts['Not Assessed'] / totalForBarP) * 100 : 0;
+                            dashboardHtml += `
+                                <div class="ml-4 md:ml-6 p-4 bg-slate-700 rounded-lg shadow-inner mt-4">
+                                    <h4 class="text-md font-semibold text-slate-100 mb-2">Principle ${principleId}: ${principle.title} Progress</h4>
+                                    <div class="stacked-bar-container">
+                                        <div class="stacked-bar-segment bg-red-500" style="width: ${pNotAchievedPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-yellow-500" style="width: ${pPartiallyAchievedPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-green-500" style="width: ${pAchievedPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-gray-500" style="width: ${pNotAssessedPct.toFixed(1)}%"></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Achieved: ${counts['Achieved']}</span>
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Partially Achieved: ${counts['Partially Achieved']}</span>
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>Not Achieved: ${counts['Not Achieved']}</span>
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>Not Assessed: ${counts['Not Assessed']}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });                // Sector Profile Compliance Section
+                dashboardHtml += `
+                    <div id="profileComplianceSection" class="space-y-6">
+                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Sector Profile Compliance</h3>
+                        ${profileFilename ? `<p class="text-slate-400 text-sm">Profile: ${profileFilename}</p>` : ''}
+                `;
+
+                if (sectorProfile) {
+                    const complianceResults = calculateCompliance();
+                    const hasData = Object.keys(complianceResults).length > 0 && 
+                                    Object.values(complianceResults).some(obj => obj.achieved > 0 || obj.failed > 0);
+
+                    if (hasData) {
+                        Object.keys(complianceResults).forEach(objective => {
+                            const result = complianceResults[objective];
+                            const totalAreas = (result.achieved || 0) + (result.failed || 0) + (result.notAssessed || 0);
+                            const achievedPct = totalAreas > 0 ? ((result.achieved || 0) / totalAreas) * 100 : 0;
+                            const failedPct = totalAreas > 0 ? ((result.failed || 0) / totalAreas) * 100 : 0;
+                            const notAssessedPct = totalAreas > 0 ? ((result.notAssessed || 0) / totalAreas) * 100 : 0;
+
+                            dashboardHtml += `
+                                <div class="p-6 bg-slate-700 rounded-lg shadow-inner">
+                                    <h4 class="text-lg font-bold text-sky-400 mb-2">Objective ${objective}${objectiveTitles[objective] ? `: ${objectiveTitles[objective]}` : ``} Compliance</h4>
+                                    <p class="text-md"><strong>${achievedPct.toFixed(1)}% Compliant</strong></p>
+                                    <div class="stacked-bar-container">
+                                        <div class="stacked-bar-segment bg-green-500" style="width: ${achievedPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-red-500" style="width: ${failedPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-gray-500" style="width: ${notAssessedPct.toFixed(1)}%"></div>
+                                    </div>
+                                    <div class="space-y-1 text-sm mt-2">
+                                        <p><span class="w-3 h-3 rounded-full bg-green-500 mr-2 inline-block"></span> Compliant: ${result.achieved}</p>
+                                        <p><span class="w-3 h-3 rounded-full bg-red-500 mr-2 inline-block"></span> Not Compliant: ${result.failed}</p>                                        <!-- Principle-level Profile Compliance -->
+                                        <p><span class="w-3 h-3 rounded-full bg-gray-500 mr-2 inline-block"></span> Not Assessed: ${result.notAssessed || 0}</p>
+                                    </div>
+                                </div>
+                            `;
+                            // Profile principle compliance (separate sibling cards)
+                            const principleCards = allIGPs[objective] ? Object.keys(allIGPs[objective]).map(principleId => {
+                                const principle = allIGPs[objective][principleId];
+                                const prPrinciple = sectorProfile[principleId];
+                                const attainmentOrder = {
+                                    'Not Assessed': 0,
+                                    'Not Achieved': 1,
+                                    'Partially Achieved': 2,
+                                    'Achieved': 3,
+                                    'Not Applicable': 4
+                                };
+                                let pc = { achieved: 0, failed: 0, notAssessed: 0 };
+                                Object.keys(principle.areas).forEach(areaId => {
+                                    const prArea = sectorProfile[areaId];
+                                    const req = prArea || prPrinciple;
+                                    if (!req) return;
+                                    const ua = attainment[areaId];
+                                    if ((ua && ua.status === 'Not Applicable') || req.level === 'Not Applicable') return;
+                                    if (!ua || ua.status === 'Not Assessed') { pc.notAssessed++; return; }
+                                    const ul = attainmentOrder[ua.status] ?? 0;
+                                    const rl = attainmentOrder[req.level] ?? 0;
+                                    if (ul >= rl) { pc.achieved++; } else { pc.failed++; }
+                                });
+                                const t = pc.achieved + pc.failed + pc.notAssessed;
+                                const aPct = t > 0 ? (pc.achieved / t) * 100 : 0;
+                                const fPct = t > 0 ? (pc.failed / t) * 100 : 0;
+                                const nPct = t > 0 ? (pc.notAssessed / t) * 100 : 0;
+                                return `
+                                <div class="ml-4 md:ml-6 p-4 bg-slate-700 rounded-lg shadow-inner mt-4">
+                                    <h5 class="text-sm font-semibold text-slate-100 mb-2">Principle ${principleId}: ${principle.title} Compliance</h5>
+                                    <div class="stacked-bar-container">
+                                        <div class="stacked-bar-segment bg-green-500" style="width: ${aPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-red-500" style="width: ${fPct.toFixed(1)}%"></div>
+                                        <div class="stacked-bar-segment bg-gray-500" style="width: ${nPct.toFixed(1)}%"></div>
+                                    </div>
+                                    <div class="space-y-1 text-sm mt-2">
+                                        <p><span class="w-3 h-3 rounded-full bg-green-500 mr-2 inline-block"></span> Compliant: ${pc.achieved}</p>
+                                        <p><span class="w-3 h-3 rounded-full bg-red-500 mr-2 inline-block"></span> Not Compliant: ${pc.failed}</p>
+                                    </div>
+                                </div>`;
+                            }).join('') : '';
+                            dashboardHtml += principleCards;
+                        });
+                    } else {
+                        dashboardHtml += `
+                            <div class="p-6 bg-slate-700 rounded-lg shadow-inner">
+                                <p class="text-center text-slate-400">No matching areas found between your current assessment and the loaded profile. Begin your assessment to see compliance data.</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    dashboardHtml += `
+                        <div class="p-6 bg-slate-700 rounded-lg shadow-inner">
+                            <p class="text-center text-slate-400">Load a Sector Profile file to see compliance data.</p>
+                        </div>
+                    `;
+                }
+
+                dashboardHtml += `</div>`; // Close profileComplianceSection
+                dashboardContent.innerHTML = dashboardHtml;
             };
             
             const initializeAssessment = (data, filename) => {
                 allIGPs = groupIGPs(data);
                 attainment = {};
-                Object.values(allIGPs).forEach(obj => {
-                    Object.values(obj).forEach(principle => {
+                areaToObjective = {};
+                Object.keys(allIGPs).forEach(objKey => {
+                    const obj = allIGPs[objKey];
+                    Object.keys(obj).forEach(principleId => {
+                        const principle = obj[principleId];
                         Object.keys(principle.areas).forEach(areaId => {
                             attainment[areaId] = { status: 'Not Assessed', note: '' };
+                            areaToObjective[areaId] = objKey;
                         });
                     });
                 });
@@ -550,12 +817,47 @@
                 } catch (error) {
                     console.error('Error during auto-load:', error);
                     loadedFilenameDisplay.textContent = 'Auto-load failed. Please try a manual upload.';
-                    showMessage(`Failed to automatically load the latest IGP file. Details: ${error.message}`);
+                    showMessage(`Failed to automatically load the latest IGP file. Details: ${error.message}`, 'error');
                 } finally {
                     toggleLoading(false);
                 }
             };
             
+            const parseProfileCSV = (csv) => {
+    const lines = csv.split('\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) return {};
+
+    const result = {};
+    const splitRegex = /,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/;
+    const headers = lines[0].split(splitRegex).map(h => h.trim());
+    const areaIdIndex = headers.indexOf('AreaID');
+    const attainmentIndex = headers.indexOf('Attainment');
+
+    if (areaIdIndex === -1 || attainmentIndex === -1) {
+        throw new Error("CSV must contain 'AreaID' and 'Attainment' columns.");
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+        const row = lines[i];
+        if (row.trim() === '') continue;
+        const values = row.split(splitRegex).map(v => v.trim());
+        const cleanedValues = values.map(v => {
+            if (v.startsWith('"') && v.endsWith('"')) {
+                return v.substring(1, v.length - 1).replace(/""/g, '"');
+            }
+            return v;
+        });
+        if (cleanedValues.length > Math.max(areaIdIndex, attainmentIndex)) {
+            const areaId = cleanedValues[areaIdIndex];
+            const attainmentLevel = cleanedValues[attainmentIndex];
+            if (areaId) {
+                result[areaId] = { level: attainmentLevel };
+            }
+        }
+    }
+    return result;
+};
+
             loadIgpFile.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -566,44 +868,91 @@
                         const csvData = e.target.result;
                         const data = parseCSV(csvData);
                         initializeAssessment(data, file.name);
+                        sectorProfile = null;
+                        profileFilename = null;
+                        showMessage('IGP file loaded. Assessment has been reset.', 'success');
                     } catch (error) {
                         console.error('Failed to load IGP file. It might be corrupted or not a valid CSV file.', error);
-                        showMessage('Failed to load IGP file. Please ensure it is a valid CSV.');
+                        showMessage('Failed to load IGP file. Please ensure it is a valid CSV.', 'error');
                     }
                 };
                 reader.readAsText(file);
             });
 
-            loadStateFile.addEventListener('change', (event) => {
+            loadProfileFile.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const loadedData = JSON.parse(e.target.result);
-                        if (loadedData && loadedData.attainment && loadedData.allIGPs) {
-                            attainment = loadedData.attainment;
-                            allIGPs = loadedData.allIGPs;
-
-                            Object.keys(contentContainers).forEach(obj => {
-                                if (allIGPs[obj]) {
-                                    renderAssessment(obj, allIGPs[obj]);
-                                }
-                            });
-                            updateDashboard();
-                            loadedFilenameDisplay.textContent = `Assessment Loaded from: ${file.name}`;
-                        } else {
-                            console.error('Failed to load assessment. The file is missing "attainment" or "allIGPs" data.');
-                            showMessage('Failed to load assessment. The file is not a valid assessment file.');
-                        }
+                        const csvData = e.target.result;
+                        sectorProfile = parseProfileCSV(csvData);
+                        profileFilename = file.name;
+                        showMessage(`Sector Profile "${file.name}" loaded successfully.`, 'success');
+                        updateDashboard();
                     } catch (error) {
-                        console.error('Failed to load file. It might be corrupted or not a valid JSON file.', error);
-                        showMessage('Failed to load file. It might be corrupted or not a valid JSON file.');
+                        console.error('Failed to load Sector Profile file.', error);
+                        showMessage('Failed to load Sector Profile. Please ensure it is a valid CSV with "AreaID" and "Attainment" columns.', 'error');
                     }
                 };
                 reader.readAsText(file);
             });
+
+            loadStateFile.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const raw = e.target.result;
+            const json = JSON.parse(raw);
+
+            // Validate basic shape
+            if (!json || typeof json !== 'object' || !json.attainment) {
+                throw new Error('Invalid assessment JSON, missing "attainment".');
+            }
+
+            // If JSON contains IGPs, load them, otherwise require that IGPs are already loaded
+            if (json.allIGPs && typeof json.allIGPs === 'object') {
+                allIGPs = json.allIGPs;
+            } else if (Object.keys(allIGPs).length === 0) {
+                showMessage('Please load an IGP file first, or include "allIGPs" in the assessment JSON.', 'error');
+                return;
+            }
+
+            // Replace attainment with loaded state
+            attainment = json.attainment || {};
+            // Rebuild area-to-objective map from allIGPs
+            areaToObjective = {};
+            Object.keys(allIGPs).forEach(objKey => {
+                const obj = allIGPs[objKey];
+                Object.keys(obj).forEach(principleId => {
+                    const principle = obj[principleId];
+                    Object.keys(principle.areas).forEach(areaId => {
+                        areaToObjective[areaId] = objKey;
+                    });
+                });
+            });
+
+            // Re-render all objective sections and dashboard
+            Object.keys(contentContainers).forEach(obj => {
+                if (allIGPs[obj]) {
+                    renderAssessment(obj, allIGPs[obj]);
+                }
+            });
+            updateDashboard();
+
+            loadedFilenameDisplay.textContent = `Assessment Loaded from: ${file.name}`;
+            showMessage('Assessment JSON loaded successfully.', 'success');
+        } catch (error) {
+            console.error('Failed to load assessment JSON.', error);
+            showMessage(`Failed to load assessment. Details: ${error.message}`, 'error');
+        }
+    };
+    reader.readAsText(file);
+});
 
             downloadJsonBtn.addEventListener('click', () => {
                 const assessmentState = {
@@ -635,6 +984,7 @@
                         content.classList.remove('active');
                     });
                     document.getElementById(tabId).classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
 
@@ -677,6 +1027,9 @@
                             .bg-slate-500 { background-color: #64748b; }
                             .stacked-bar-container { display: flex; height: 40px; width: 100%; border-radius: 0.5rem; overflow: hidden; margin-top: 1rem; }
                             .stacked-bar-segment { height: 100%; transition: width 0.5s ease-in-out; }
+        #profileComplianceSection { page-break-before: always; break-before: page; }
+                            .ml-4 { margin-left: 1rem; }
+                            .md\\:ml-6 { margin-left: 1.5rem; }
                         </style>
                     </head>
                     <body>
@@ -696,3 +1049,25 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
