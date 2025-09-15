@@ -11,7 +11,7 @@ A,A1,Governance,A1.a,Board Direction,Achieved,The board has the information and 
 A,A1,Governance,A1.a,Board Direction,Achieved,Security is recognised as an important enabler for the resilience of your essential function(s) and considered in all relevant discussions.
 A,A1,Governance,A1.b,Roles and Responsibilities,Not Achieved,"Key roles are missing, left vacant, or fulfilled on an ad-hoc or informal basis."
 A,A1,Governance,A1.b,Roles and Responsibilities,Not Achieved,"Staff are assigned security responsibilities but without adequate authority or resources to fulfil them."
-A,A1,Governance,A1.b,Roles and Responsibilities,Not Achieved,Staff are unsure what their responsibilities are for the security of the essential function(s)."
+A,A1,Governance,A1.b,Roles and Responsibilities,Not Achieved,"Staff are unsure what their responsibilities are for the security of the essential function(s)."
 A,A1,Governance,A1.b,Roles and Responsibilities,Achieved,Key roles and responsibilities for the security of network and information systems supporting your essential function(s) have been identified. These are reviewed regularly to ensure they remain fit for purpose.
 A,A1,Governance,A1.b,Roles and Responsibilities,Achieved,"Appropriately capable and knowledgeable staff fill those roles and are given the time, authority, and resources to carry out their duties."
 A,A1,Governance,A1.b,Roles and Responsibilities,Achieved,There is clarity on who in your organisation has overall accountability for the security of network and information systems supporting your essential function(s).
@@ -555,5 +555,6 @@ D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,"Securi
 D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Analysis is fed to senior management and incorporated into risk management and continuous improvement.
 D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your organisation maximises the lessons learned by using the analysis into 'what if' / 'if only' scenarios.
 D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved,Your organisation learns from reported incidents in your sector and the wider national infrastructure.
+
 
 
