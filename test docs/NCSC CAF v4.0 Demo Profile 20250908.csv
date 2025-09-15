@@ -1,0 +1,42 @@
+Objective,Principle,PrincipleTitle,AreaID,AreaTitle,Attainment
+A,A1,Governance,A1.a,Board Direction,Achieved
+A,A1,Governance,A1.b,Roles and Responsibilities,Achieved
+A,A1,Governance,A1.c,Decision-making,Achieved
+A,A2,Risk Management,A2.a,Risk Management Process,Partially Achieved
+A,A2,Risk Management,A2.b,Understanding Threat,Not Achieved
+A,A2,Risk Management,A2.c,Assurance,Achieved
+A,A3,Asset Management,A3.a,Asset Management,Achieved
+A,A4,Supply Chain,A4.a,Supply Chain,Partially Achieved
+A,A4,Supply Chain,A4.b,Secure Software Development and Support,Partially Achieved
+B,B1,"Service Protection Policies, Processes and Procedures",B1.a,"Policy, Process and Procedure Development",Partially Achieved
+B,B1,"Service Protection Policies, Processes and Procedures",B1.b,"Policy, Process and Procedure Implementation",Partially Achieved
+B,B2,Identity and Access Control,B2.a,"Identity Verification, Authentication and Authorisation",Achieved
+B,B2,Identity and Access Control,B2.b,Device Management,Achieved
+B,B2,Identity and Access Control,B2.c,Privileged User Management,Partially Achieved
+B,B2,Identity and Access Control,B2.d,Identity and Access Management (IdAM),Achieved
+B,B3,Data Security,B3.a,Understanding Data,Partially Achieved
+B,B3,Data Security,B3.b,Data in Transit,Achieved
+B,B3,Data Security,B3.c,Stored Data,Partially Achieved
+B,B3,Data Security,B3.d,Mobile Data,Achieved
+B,B3,Data Security,B3.e,Media / Equipment Sanitisation,Partially Achieved
+B,B4,System Security,B4.a,Secure by Design,Achieved
+B,B4,System Security,B4.b,Secure Configuration,Partially Achieved
+B,B4,System Security,B4.c,Secure Management,Achieved
+B,B4,System Security,B4.d,Vulnerability Management,Partially Achieved
+B,B5,Resilient Networks and Systems,B5.a,Resilience Preparation,Achieved
+B,B5,Resilient Networks and Systems,B5.b,Design for Resilience,Partially Achieved
+B,B5,Resilient Networks and Systems,B5.c,Backups,Achieved
+B,B6,Staff Awareness and Training,B6.a,Cyber Security Culture,Partially Achieved
+B,B6,Staff Awareness and Training,B6.b,Cyber Security Training,Achieved
+C,C1,Security Monitoring,C1.a,Sources and Tools for Logging and Monitoring,Partially Achieved
+C,C1,Security Monitoring,C1.b,Securing Logs,Achieved
+C,C1,Security Monitoring,C1.c,Generating Alerts,Partially Achieved
+C,C1,Security Monitoring,C1.d,Triage of Security Alerts,Achieved
+C,C1,Security Monitoring,C1.e,Personnel Skills for Monitoring and Detection,Partially Achieved
+C,C1,Security Monitoring,C1.f,"Understanding User’s and System’s Behaviour, and Threat Intelligence (within Security Monitoring)",Achieved
+C,C2,Threat Hunting,C2.a,Threat Hunting,Partially Achieved
+D,D1,Response and Recovery Planning,D1.a,Response Plan,Achieved
+D,D1,Response and Recovery Planning,D1.b,Response and Recovery Capability,Achieved
+D,D1,Response and Recovery Planning,D1.c,Testing and Exercising,Achieved
+D,D2,Lessons Learned,D2.a,Post Incident Analysis,Achieved
+D,D2,Lessons Learned,D2.b,Using Incidents to Drive Improvements,Achieved
